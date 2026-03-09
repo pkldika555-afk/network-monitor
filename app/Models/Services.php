@@ -8,9 +8,16 @@ use Illuminate\Database\Eloquent\Model;
 class Services extends Model
 {
     protected $fillable = [
-        'name', 'url', 'category', 'department',
-        'auth_type', 'auth_value', 'is_active',
-        'status', 'response_ms', 'last_checked_at',
+        'name',
+        'url',
+        'category',
+        'department',
+        'auth_type',
+        'auth_value',
+        'is_active',
+        'status',
+        'response_ms',
+        'last_checked_at',
     ];
     protected $cast = [
         'is_active' => 'boolean',
@@ -19,5 +26,9 @@ class Services extends Model
     public function logs()
     {
         return $this->hasMany(CheckLog::class);
+    }
+    public function latestLog()
+    {
+        return $this->hasOne(CheckLog::class)->latest('checked_at');
     }
 }
