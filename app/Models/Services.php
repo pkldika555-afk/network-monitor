@@ -16,4 +16,8 @@ class Services extends Model
         'is_active' => 'boolean',
         'last_checked_at' => 'datetime',
     ];
+    public function logs()
+    {
+        return $this->hasMany(CheckLog::class);
+    }
 }
