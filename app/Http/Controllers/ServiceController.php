@@ -3,14 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Models\Service;
+use App\Models\Services;
 use Illuminate\Http\Request;
 
 class ServiceController extends Controller
 {
     public function index()
     {
-        $services = Service::latest()->get();
-        $categories = Service::distinct()->pluck('category')->sort()->value();
+        $services = Services::latest()->get();
+        $categories = Services::distinct()->pluck('category')->sort()->values();
 
         return view('services.index', compact('categories', 'services'));
     }
@@ -24,10 +25,10 @@ class ServiceController extends Controller
             'auth_type' => 'in:none,bearer,basic',
             'auth_value' => 'nullable|string',
         ]);
-        $service = Service::create($validated);
+        $service = Services::create($validated);
         return redirect()->route('services.index')->with('success', 'Services berhasil ditambahkan');
     }
-    public function update(Request $request, Service $service)
+    public function update(Request $request, Services $service)
     {
         $validated = $request->validate([
             'name' => 'required|string|max:150',
@@ -39,7 +40,7 @@ class ServiceController extends Controller
         $service->update($validated);
         return redirect()->route('services.index')->with('success', 'Services berhasil diupdate');
     }
-    public function destroy(Service $service)
+    public function destroy(Services $service)
     {
         $service->delete();
         return redirect()->route('services.index')->with('success', 'Services berhasil dihapus');
