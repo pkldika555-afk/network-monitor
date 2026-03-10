@@ -63,6 +63,7 @@
         <select id="interval-sel" onchange="setIntervalTime()"
             class="w-full bg-gray-900 border border-gray-700 rounded text-xs mono text-gray-300 px-2 py-1 outline-none">
             <option value="1">1 detik</option>
+            <option value="15">15 detik</option>
             <option value="30">30 detik</option>
             <option value="60" selected>1 menit</option>
             <option value="300">5 menit</option>
