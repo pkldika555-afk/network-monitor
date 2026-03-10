@@ -65,7 +65,7 @@ class CheckController extends Controller
                 'id' => $service->id,
                 'name' => $service->name,
                 'status' => $result['status'],
-                'ms' => $result['response_ms'],
+                'response_ms' => $result['response_ms'],
             ];
         }
 
