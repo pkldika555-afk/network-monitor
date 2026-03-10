@@ -24,7 +24,7 @@
                     @endif
                     <span id="ms-{{ $svc->id }}"
                         class="text-xs mono px-2 py-0.5 rounded
-                                  {{ $svc->response_ms ? ($svc->response_ms < 150 ? 'text-green-400' : ($svc->response_ms < 400 ? 'text-yellow-400' : 'text-red-400')) : 'text-gray-600' }}">
+                                          {{ $svc->response_ms ? ($svc->response_ms < 150 ? 'text-green-400' : ($svc->response_ms < 400 ? 'text-yellow-400' : 'text-red-400')) : 'text-gray-600' }}">
                         ⚡ {{ $svc->response_ms ? $svc->response_ms . 'ms' : '—ms' }}
                     </span>
                     @if($svc->auth_type && $svc->auth_type !== 'none')
@@ -60,8 +60,9 @@
                         title="Cek">
                         <span id="icon-{{ $svc->id }}">⟳</span>
                     </button>
-                    <button
-                        onclick="openEdit({{ $svc->id }}, '{{ addslashes($svc->name) }}', '{{ addslashes($svc->url) }}', '{{ $svc->category }}', '{{ $svc->department }}', '{{ $svc->auth_type }}')"
+                    <button onclick="openEdit(this)" data-id="{{ $svc->id }}" data-name="{{ $svc->name }}"
+                        data-url="{{ $svc->url }}" data-cat="{{ $svc->category }}" data-dept="{{ $svc->department }}"
+                        data-auth="{{ $svc->auth_type }}" data-auth-value="{{ $svc->auth_value }}"
                         class="w-7 h-7 flex items-center justify-center rounded border border-gray-700 hover:bg-gray-700 text-gray-500 hover:text-white text-xs transition"
                         title="Edit">✎
                     </button>
@@ -79,5 +80,5 @@
             <p class="text-sm">Belum ada service. Klik "+ Tambah" untuk mulai.</p>
         </div>
     @endforelse
-     @include('services.partials._modal_delete')
+    @include('services.partials._modal_delete')
 </div>

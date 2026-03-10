@@ -41,12 +41,21 @@
                 </div>
                 <div>
                     <label class="block text-xs text-gray-500 uppercase tracking-wider mb-1">Auth Type</label>
-                    <select name="auth_type"
+                    <select name="auth_type" id="add-auth-type" onchange="toggleAuthValue('add')"
                         class="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-sm mono text-gray-200 outline-none">
                         <option value="none">Tidak ada</option>
                         <option value="bearer">Bearer Token</option>
                         <option value="basic">Basic Auth</option>
                     </select>
+                </div>
+
+                <div id="add-auth-value-wrap" class="hidden">
+                    <label class="block text-xs text-gray-500 uppercase tracking-wider mb-1"
+                        id="add-auth-label">Token</label>
+                    <input name="auth_value" id="add-auth-value"
+                        class="w-full bg-gray-950 border border-gray-700 focus:border-blue-500 rounded-lg px-3 py-2 text-sm mono text-gray-200 outline-none transition"
+                        placeholder="">
+                    <div class="text-xs text-gray-600 mono mt-1" id="add-auth-hint"></div>
                 </div>
             </div>
             <div class="flex justify-end gap-2 mt-5">

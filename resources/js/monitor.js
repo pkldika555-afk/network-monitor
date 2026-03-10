@@ -150,15 +150,18 @@ window.sortCards = function () {
     cards.forEach((c) => grid.appendChild(c));
 };
 
-window.openEdit = function (id, name, url, cat, dept, auth) {
-    document.getElementById("form-edit").action = `/services/${id}`;
-    document.getElementById("edit-name").value = name;
-    document.getElementById("edit-url").value = url;
-    document.getElementById("edit-cat").value = cat;
-    document.getElementById("edit-dept").value = dept || "";
-    document.getElementById("edit-auth").value = auth || "none";
+window.openEdit = function(btn){
+    const d = btn.dataset;
+    document.getElementById("form-edit").action = `/services/${d.id}`;
+    document.getElementById("edit-name").value = d.name;
+    document.getElementById("edit-url").value = d.url;
+    document.getElementById("edit-cat").value = d.cat;
+    document.getElementById("edit-dept").value = d.dept || "";
+    document.getElementById("edit-auth-type").value = d.auth || "none";
+    document.getElementById("edit-auth-value").value = d.authValue || "";
+    toggleAuthValue("edit");
     document.getElementById("modal-edit").classList.remove("hidden");
-};
+}
 
 window.toggleAuto = function () {
     autoOn = !autoOn;
@@ -314,3 +317,34 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 });
+
+const AUTH_CONFIG = {
+    bearer: {
+        label: "Bearer Token",
+        placeholder: "eyJhbGciOiJIUzI1NiIs...",
+        hint: 'Token saja, tanpa kata "Bearer"',
+    },
+    basic: {
+        label: "Basic Auth",
+        placeholder: "username:password",
+        hint: "Format: username:password (pisah dengan titik dua)",
+    },
+};
+
+window.toggleAuthValue = function (prefix) {
+    const type = document.getElementById(`${prefix}-auth-type`).value;
+    const wrap = document.getElementById(`${prefix}-auth-value-wrap`);
+    const label = document.getElementById(`${prefix}-auth-label`);
+    const input = document.getElementById(`${prefix}-auth-value`);
+    const hint = document.getElementById(`${prefix}-auth-hint`);
+
+    if (type === "none") {
+        wrap.classList.add("hidden");
+        input.value = "";
+    } else {
+        wrap.classList.remove("hidden");
+        label.textContent = AUTH_CONFIG[type].label;
+        input.placeholder = AUTH_CONFIG[type].placeholder;
+        hint.textContent = AUTH_CONFIG[type].hint;
+    }
+};
