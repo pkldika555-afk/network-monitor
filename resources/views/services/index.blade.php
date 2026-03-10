@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Network Monitor</title>
-    @vite(['resources/css/app.css', 'resources/css/monitor.css', 'resources/js/monitor.js'])
+    @vite(['resources/css/app.css', 'resources/css/monitor.css', 'resources/js/monitor.js', 'resources/js/assign.js'])
     <link
         href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
         rel="stylesheet">
@@ -76,6 +76,7 @@
     </div>
     @include('services.partials._modal_add')
     @include('services.partials._modal_edit')
+    @include('services.partials._modal_assign')  
     <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2"></div>
 </body>
 </html>

@@ -18,6 +18,8 @@ class Services extends Model
         'status',
         'response_ms',
         'last_checked_at',
+        'assigned_to',
+        'assigned_at',
     ];
     protected $cast = [
         'is_active' => 'boolean',

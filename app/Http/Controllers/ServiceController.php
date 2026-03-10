@@ -51,4 +51,21 @@ class ServiceController extends Controller
         $service->delete();
         return redirect()->route('services.index')->with('success', 'Services berhasil dihapus');
     }
+    public function assign(Request $request, Services $service)
+{
+    $request->validate([
+        'assigned_to' => 'nullable|string|max:150',
+    ]);
+
+    $service->update([
+        'assigned_to' => $request->assigned_to ?: null,
+        'assigned_at' => $request->assigned_to ? now() : null,
+    ]);
+
+    return response()->json([
+        'id'          => $service->id,
+        'assigned_to' => $service->assigned_to,
+        'assigned_at' => $service->assigned_at?->format('d M Y H:i'),
+    ]);
+}
 }

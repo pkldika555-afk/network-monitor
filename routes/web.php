@@ -22,6 +22,7 @@ Route::get('/services', [ServiceController::class, 'index'])->name('services.ind
 Route::post('/services', [ServiceController::class, 'store'])->name('services.store');
 Route::put('/services/{service}',[ServiceController::class, 'update'])->name('services.update');
 Route::delete('/services/{service}', [ServiceController::class, 'destroy'])->name('services.destroy');
+Route::post('/services/{service}/assign', [ServiceController::class, 'assign'])->name('services.assign');
 
 Route::post('/check/{id}',  [CheckController::class, 'single'])->name('check.single');
 Route::post('/check-all',   [CheckController::class, 'all'])->name('check.all');

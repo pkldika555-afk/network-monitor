@@ -24,7 +24,7 @@
                     @endif
                     <span id="ms-{{ $svc->id }}"
                         class="text-xs mono px-2 py-0.5 rounded
-                          {{ $svc->response_ms ? ($svc->response_ms < 150 ? 'text-green-400' : ($svc->response_ms < 400 ? 'text-yellow-400' : 'text-red-400')) : 'text-gray-600' }}">
+                              {{ $svc->response_ms ? ($svc->response_ms < 150 ? 'text-green-400' : ($svc->response_ms < 400 ? 'text-yellow-400' : 'text-red-400')) : 'text-gray-600' }}">
                         ⚡ {{ $svc->response_ms ? $svc->response_ms . 'ms' : '—ms' }}
                     </span>
                     @if($svc->auth_type && $svc->auth_type !== 'none')
@@ -38,7 +38,23 @@
                 <div id="lastcheck-{{ $svc->id }}" class="text-xs mono text-gray-600">
                     {{ $svc->last_checked_at ? \Carbon\Carbon::parse($svc->last_checked_at)->diffForHumans() : 'Belum dicek' }}
                 </div>
+                <div class="flex items-center gap-2">
+                    @if($svc->assigned_to)
+                        <div
+                            class="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold">
+                            {{ strtoupper(substr($svc->assigned_to, 0, 1)) }}
+                        </div>
+                        <span class="text-xs mono text-gray-300" id="assign-{{ $svc->id }}">{{ $svc->assigned_to }}</span>
+                    @else
+                        <span class="text-xs mono text-gray-600" id="assign-{{ $svc->id }}">— unassigned</span>
+                    @endif
+                    <button onclick="openAssign({{ $svc->id }}, '{{ $svc->assigned_to }}')"
+                        class="text-xs mono text-gray-600 hover:text-blue-400 transition" title="Assign">
+                        ◉
+                    </button>
+                </div>
                 <div class="flex items-center gap-1.5">
+
                     <button onclick="checkSingle({{ $svc->id }})" id="btn-{{ $svc->id }}"
                         class="w-7 h-7 flex items-center justify-center rounded border border-gray-700 hover:bg-gray-700 text-gray-500 hover:text-white text-xs transition"
                         title="Cek">
