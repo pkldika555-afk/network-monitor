@@ -10,8 +10,10 @@ class ServiceController extends Controller
     public function index()
     {
         $services = Services::latest()->get();
-        $categories = Services::distinct()->pluck('category')->sort()->values();
-
+        $categories = Services::selectRaw('category, count(*) as total, SUM(status = "offline") as offline_count')
+            ->groupBy('category')
+            ->orderBy('category')
+            ->get();
         return view('services.index', compact('categories', 'services'));
     }
     public function store(Request $request)
