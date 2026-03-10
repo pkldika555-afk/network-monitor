@@ -14,7 +14,9 @@ class ServiceController extends Controller
             ->groupBy('category')
             ->orderBy('category')
             ->get();
-        return view('services.index', compact('categories', 'services'));
+        $catList = Services::distinct()->pluck('category')->filter()->sort()->values();
+        $depList = Services::distinct()->pluck('department')->filter()->sort()->values();
+        return view('services.index', compact('categories', 'services', 'catList', 'depList'));
     }
     public function store(Request $request)
     {

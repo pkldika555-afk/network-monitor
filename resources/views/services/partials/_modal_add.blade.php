@@ -18,13 +18,25 @@
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs text-gray-500 uppercase tracking-wider mb-1">Kategori</label>
-                        <input name="category" placeholder="Web App / IP Camera..."
+                        <input name="category" placeholder="Web App / IP Camera..." list="cat-suggestions"
+                            autocomplete="off"
                             class="w-full bg-gray-950 border border-gray-700 focus:border-blue-500 rounded-lg px-3 py-2 text-sm mono text-gray-200 outline-none transition">
+                        <datalist id="cat-suggestions">
+                            @foreach($catList as $cat)
+                                <option value="{{ $cat }}">
+                            @endforeach
+                        </datalist>
                     </div>
                     <div>
                         <label class="block text-xs text-gray-500 uppercase tracking-wider mb-1">Departemen</label>
-                        <input name="department" placeholder="HRD / IT / Produksi"
+                        <input name="department" placeholder="HRD / IT / Produksi" list="dept-suggestions"
+                            autocomplete="off"
                             class="w-full bg-gray-950 border border-gray-700 focus:border-blue-500 rounded-lg px-3 py-2 text-sm mono text-gray-200 outline-none transition">
+                        <datalist id="dept-suggestions">
+                            @foreach($depList as $dept)
+                                <option value="{{ $dept }}">
+                            @endforeach
+                        </datalist>
                     </div>
                 </div>
                 <div>
