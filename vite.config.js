@@ -12,6 +12,7 @@ export default defineConfig({
                 'resources/js/monitor.js',
                 'resources/js/assign.js',
                 'resources/js/sound.js',
+                'resources/js/delete.js',
             ],
             refresh: true,
         }),

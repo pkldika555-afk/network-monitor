@@ -24,7 +24,7 @@
                     @endif
                     <span id="ms-{{ $svc->id }}"
                         class="text-xs mono px-2 py-0.5 rounded
-                              {{ $svc->response_ms ? ($svc->response_ms < 150 ? 'text-green-400' : ($svc->response_ms < 400 ? 'text-yellow-400' : 'text-red-400')) : 'text-gray-600' }}">
+                                  {{ $svc->response_ms ? ($svc->response_ms < 150 ? 'text-green-400' : ($svc->response_ms < 400 ? 'text-yellow-400' : 'text-red-400')) : 'text-gray-600' }}">
                         ⚡ {{ $svc->response_ms ? $svc->response_ms . 'ms' : '—ms' }}
                     </span>
                     @if($svc->auth_type && $svc->auth_type !== 'none')
@@ -65,14 +65,11 @@
                         class="w-7 h-7 flex items-center justify-center rounded border border-gray-700 hover:bg-gray-700 text-gray-500 hover:text-white text-xs transition"
                         title="Edit">✎
                     </button>
-                    <form method="POST" action="{{ route('services.destroy', $svc->id) }}"
-                        onsubmit="return confirm('Hapus {{ $svc->name }}?')">
-                        @csrf @method('DELETE')
-                        <button type="submit"
-                            class="w-7 h-7 flex items-center justify-center rounded border border-gray-700 hover:bg-red-900/30 hover:border-red-800 text-gray-500 hover:text-red-400 text-xs transition"
-                            title="Hapus">✕
-                        </button>
-                    </form>
+                    <button type="button"
+                        onclick="openDeleteModal({{ $svc->id }}, '{{ addslashes($svc->name) }}', '{{ addslashes($svc->url) }}')"
+                        class="w-7 h-7 flex items-center justify-center rounded border border-gray-700 hover:bg-red-900/30 hover:border-red-800 text-gray-500 hover:text-red-400 text-xs transition"
+                        title="Hapus">✕
+                    </button>
                 </div>
             </div>
         </div>
@@ -82,4 +79,5 @@
             <p class="text-sm">Belum ada service. Klik "+ Tambah" untuk mulai.</p>
         </div>
     @endforelse
+     @include('services.partials._modal_delete')
 </div>
