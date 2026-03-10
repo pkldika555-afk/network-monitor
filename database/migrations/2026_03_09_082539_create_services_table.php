@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('name');
             $table->string('url');
             $table->string('category')->default('Lainnya');
-            $table->string('departemen')->nullable();
+            $table->string('department')->nullable();
             $table->boolean('is_active')->default(true);
             $table->enum('status', ['online', 'offline', 'unknown'])->default('unknown');
             $table->integer('response_ms')->nullable();

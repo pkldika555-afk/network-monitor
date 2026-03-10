@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Service;
 use App\Models\Services;
 use Illuminate\Http\Request;
 
@@ -17,11 +16,16 @@ class ServiceController extends Controller
     }
     public function store(Request $request)
     {
+        $url = $request->url;
+        if (!str_starts_with($url, 'http')) {
+            $url = 'http://' . $url;
+        }
+        $request->merge(['url' => $url]);
         $validated = $request->validate([
             'name' => 'required|string|max:150',
             'url' => 'required|url',
             'category' => 'required|string|max:100',
-            'departemen' => 'required|string|max:150',
+            'department' => 'required|string|max:150',
             'auth_type' => 'in:none,bearer,basic',
             'auth_value' => 'nullable|string',
         ]);
@@ -34,7 +38,7 @@ class ServiceController extends Controller
             'name' => 'required|string|max:150',
             'url' => 'required|url',
             'category' => 'required|string|max:100',
-            'departemen' => 'required|string|max:150',
+            'department' => 'required|string|max:150',
             'auth_type' => 'in:none,bearer,basic',
         ]);
         $service->update($validated);
