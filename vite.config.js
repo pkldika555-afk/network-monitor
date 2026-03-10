@@ -10,7 +10,8 @@ export default defineConfig({
                 'resources/js/app.js', 
                 'resources/css/monitor.css', 
                 'resources/js/monitor.js',
-                'resources/js/assign.js'
+                'resources/js/assign.js',
+                'resources/js/sound.js',
             ],
             refresh: true,
         }),
