@@ -33,6 +33,13 @@
                     id="top-unknown">{{ $services->where('status', 'unknown')->count() }}</span> unknown</span>
         </div>
         <div class="ml-auto flex items-center gap-2">
+            <form method="POST" action="{{ route('logout') }}">
+                @csrf
+                <button type="submit"
+                    class="flex items-center gap-1.5 px-3 py-1.5 bg-gray-800 hover:bg-red-900/30 hover:border-red-800 hover:text-red-400 border border-gray-700 rounded-lg text-xs mono text-gray-500 transition">
+                    ⏻ Logout
+                </button>
+            </form>
             <button id="mute-btn" onclick="toggleMute()" title="Sound on — click to mute"
                 class="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-700 text-gray-500 hover:text-white transition text-sm">
                 <span id="mute-icon">🔔</span>
