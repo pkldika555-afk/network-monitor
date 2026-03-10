@@ -189,7 +189,7 @@
                     <div class="px-4 py-2.5 border-t border-gray-800 flex items-center justify-between">
                         <div id="lastcheck-{{ $svc->id }}" class="text-xs mono text-gray-600">
                             @if($svc->last_checked_at)
-                                {{ $svc->last_checked_at->diffForHumans() }}
+                                {{ $svc->last_checked_at ? \Carbon\Carbon::parse($svc->last_checked_at)->diffForHumans() : 'Belum pernah dicek' }}
                             @else
                                 Belum pernah dicek
                             @endif
