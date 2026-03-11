@@ -1,5 +1,6 @@
 window.prevStatus = {};
 window.mutedServices = new Set();
+window.isUpdating = false;
 
 let alertCooldown = false;
 let COOLDOWN_MS = 3000;
@@ -7,7 +8,7 @@ let audioCtx = null;
 let alertBuffer = null;
 let activeSource = null;
 let isLoadingSound = false;
-
+let alert_until = 0;
 async function loadSound() {
     if (alertBuffer || isLoadingSound) return;
     isLoadingSound = true;
@@ -17,6 +18,7 @@ async function loadSound() {
         const res = await fetch("/sounds/danger_sms.mp3");
         const arrBuf = await res.arrayBuffer();
         alertBuffer = await audioCtx.decodeAudioData(arrBuf);
+        console.log("🔊 Sound system ready");
     } catch (e) {
         console.warn("Failed to load alert sound:", e);
     } finally {
@@ -24,18 +26,9 @@ async function loadSound() {
     }
 }
 
-function startAlarm() {
-    if (activeSource) return;
-    if (alertCooldown) return;
+function playLoop() {
+    if (!alertBuffer || activeSource) return;
     try {
-        if (!audioCtx)
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        if (audioCtx.state === "suspended") audioCtx.resume();
-        if (!alertBuffer) {
-            loadSound();
-            return;
-        }
-
         const source = audioCtx.createBufferSource();
         source.buffer = alertBuffer;
         source.loop = true;
@@ -43,11 +36,34 @@ function startAlarm() {
         source.start(0);
         activeSource = source;
     } catch (e) {
-        console.warn("startAlarm error:", e);
+        console.warn("playLoop error:", e);
     }
 }
 
-function stopAlarm() {
+function startAlarm() {
+    if (activeSource) return;
+
+    if (Date.now() < alert_until) {
+        console.log(
+            "🚫 Masih masa cooldown, sisa waktu: " +
+                Math.round((alert_until - Date.now()) / 1000) +
+                " detik",
+        );
+        return;
+    }
+
+    if (!audioCtx)
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === "suspended") {
+        audioCtx.resume().then(() => {
+            if (audioCtx.state === "running") playLoop();
+        });
+    } else {
+        playLoop();
+    }
+}
+
+function stopAlarm(isManual = false) {
     if (!activeSource) return;
     try {
         activeSource.stop();
@@ -55,10 +71,32 @@ function stopAlarm() {
     } catch (e) {}
     activeSource = null;
 
-    alertCooldown = true;
-    setTimeout(() => {
+    if (!isManual) {
+        const expiry = Date.now() + COOLDOWN_MS;
+        localStorage.setItem("alert_cooldown_expiry", expiry);
+        alertCooldown = true;
+
+        setTimeout(() => {
+            alertCooldown = false;
+            localStorage.removeItem("alert_cooldown_expiry");
+        }, COOLDOWN_MS);
+    } else {
         alertCooldown = false;
-    }, COOLDOWN_MS);
+        localStorage.removeItem("alert_cooldown_expiry");
+    }
+}
+
+function checkExistingCooldown() {
+    const expiry = localStorage.getItem("alert_cooldown_expiry");
+    if (expiry) {
+        const remaining = parseInt(expiry) - Date.now();
+        if (remaining > 0) {
+            alertCooldown = true;
+            setTimeout(() => {
+                alertCooldown = false;
+            }, remaining);
+        }
+    }
 }
 
 function updatePulse(id, isAlarming) {
@@ -76,35 +114,42 @@ function anyStillAlarming() {
     });
 }
 
-window.trackStatusChange = function (id, newStatus) {
+window.trackStatusChange = function(id, newStatus) {
     const sid = String(id);
     const prev = window.prevStatus[sid];
     window.prevStatus[sid] = newStatus;
 
-    if (newStatus === "offline" && prev !== "offline" && prev !== undefined) {
-        if (!window.mutedServices.has(sid)) {
-            startAlarm();
-            updatePulse(id, true);
+    if (newStatus === 'offline' && prev !== 'offline' && prev !== undefined) {
+        if (Date.now() > alert_until) {
+            if (!window.mutedServices.has(sid)) {
+                startAlarm();
+                updatePulse(id, true);
+            }
+        } else {
+            console.log("🔕 Ada offline baru (" + sid + "), tapi alarm lagi di-snooze.");
         }
     }
 
-    if (newStatus === "online" && prev === "offline") {
+    if (newStatus === 'online' && prev === 'offline') {
         window.mutedServices.delete(sid);
         updateMuteBtn(id, false);
         updatePulse(id, false);
-        if (!anyStillAlarming()) stopAlarm();
+        if (!anyStillAlarming()) stopAlarm(false);
     }
-
     return false;
-};
+}
 
-window.toggleMuteService = function (id) {
+window.toggleMuteService = function(id) {
     const sid = String(id);
+    
     if (window.mutedServices.has(sid)) {
         window.mutedServices.delete(sid);
         updateMuteBtn(id, false);
-        const card = document.getElementById(`card-${id}`);
-        if (card && card.dataset.status === "offline") {
+        
+        alert_until = 0; 
+        localStorage.removeItem('alert_until_timestamp');
+        
+        if (anyStillAlarming()) {
             startAlarm();
             updatePulse(id, true);
         }
@@ -112,9 +157,16 @@ window.toggleMuteService = function (id) {
         window.mutedServices.add(sid);
         updateMuteBtn(id, true);
         updatePulse(id, false);
-        if (!anyStillAlarming()) stopAlarm();
+        
+        alert_until = Date.now() + COOLDOWN_MS;
+        localStorage.setItem('alert_until_timestamp', alert_until);
+        
+        console.log("🔇 Alarm di-Snooze sampai: " + new Date(alert_until).toLocaleTimeString());
+        if (!anyStillAlarming() || alert_until > Date.now()) {
+            stopAlarm(true); 
+        }
     }
-};
+}
 
 function updateMuteBtn(id, isMuted) {
     const btn = document.getElementById(`mute-svc-${id}`);
@@ -137,29 +189,37 @@ function updateMuteBtn(id, isMuted) {
     }
 }
 
-window.saveCooldown = function () {
-    const input = document.getElementById("cooldown-input");
-    const unit = document.getElementById("cooldown-unit");
-    const val = parseInt(input.value);
+function showAudioBanner() {
+    if (document.getElementById("audio-banner")) return;
+    const banner = document.createElement("div");
+    banner.id = "audio-banner";
+    banner.className =
+        "fixed top-14 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-2.5 bg-yellow-900/80 border border-yellow-700 rounded-lg text-xs mono text-yellow-300 shadow-xl cursor-pointer";
+    banner.innerHTML =
+        "⚠️ Audio dinonaktifkan browser — klik di sini untuk mengaktifkan alarm";
+    banner.onclick = () => {
+        if (audioCtx) audioCtx.resume();
+        banner.remove();
+        if (anyStillAlarming()) startAlarm();
+    };
+    document.body.appendChild(banner);
+}
 
-    if (isNaN(val) || val < 1) {
-        input.classList.add("border-red-500");
-        setTimeout(() => input.classList.remove("border-red-500"), 1500);
-        return;
-    }
-
+window.saveCooldown = function() {
+    const val = parseInt(document.getElementById('cooldown-input').value);
+    const unit = document.getElementById('cooldown-unit').value;
+    
     const multiplier = { s: 1, m: 60, h: 3600 };
-    const labelText = { s: "detik", m: "menit", h: "jam" };
-    COOLDOWN_MS = val * multiplier[unit.value] * 1000;
+    COOLDOWN_MS = val * multiplier[unit] * 1000; 
 
-    localStorage.setItem("alert_cooldown_val", val);
-    localStorage.setItem("alert_cooldown_unit", unit.value);
-
-    const label = document.getElementById("cooldown-label");
-    if (label) label.textContent = `Saat ini: ${val} ${labelText[unit.value]}`;
-    if (typeof toast === "function")
-        toast(`Cooldown set: ${val} ${labelText[unit.value]}`, "ok");
-};
+    localStorage.setItem('alert_cooldown_val', val);
+    localStorage.setItem('alert_cooldown_unit', unit);
+    
+    alert_until = 0; 
+    
+    console.log("✅ Cooldown Updated to: " + COOLDOWN_MS + "ms");
+    if (typeof toast === 'function') toast("Cooldown Updated", "ok");
+}
 
 function restoreCooldown() {
     const savedVal = localStorage.getItem("alert_cooldown_val");
@@ -185,27 +245,26 @@ window.initPrevStatus = function () {
         const status = card.dataset.status;
         if (id && status) window.prevStatus[String(id)] = status;
     });
+
     restoreCooldown();
+
     loadSound().then(() => {
         if (audioCtx && audioCtx.state === "suspended") {
             showAudioBanner();
         }
+        if (anyStillAlarming()) {
+            startAlarm();
+            document.querySelectorAll(".service-card").forEach((card) => {
+                const sid = card.id.replace("card-", "");
+                if (
+                    card.dataset.status === "offline" &&
+                    !window.mutedServices.has(sid)
+                ) {
+                    updatePulse(sid, true);
+                }
+            });
+        }
     });
 };
-function showAudioBanner() {
-    if (document.getElementById("audio-banner")) return;
 
-    const banner = document.createElement("div");
-    banner.id = "audio-banner";
-    banner.className =
-        "fixed top-14 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-2.5 bg-yellow-900/80 border border-yellow-700 rounded-lg text-xs mono text-yellow-300 shadow-xl cursor-pointer";
-    banner.innerHTML =
-        "⚠️ Audio dinonaktifkan browser — klik di sini untuk mengaktifkan alarm";
-    banner.onclick = () => {
-        if (audioCtx) audioCtx.resume();
-        banner.remove();
-        if (anyStillAlarming()) startAlarm();
-    };
-    document.body.appendChild(banner);
-}
 document.addEventListener("DOMContentLoaded", window.initPrevStatus);
