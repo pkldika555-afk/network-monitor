@@ -24,7 +24,7 @@
                     @endif
                     <span id="ms-{{ $svc->id }}"
                         class="text-xs mono px-2 py-0.5 rounded
-                                              {{ $svc->response_ms ? ($svc->response_ms < 150 ? 'text-green-400' : ($svc->response_ms < 400 ? 'text-yellow-400' : 'text-red-400')) : 'text-gray-600' }}">
+                                                  {{ $svc->response_ms ? ($svc->response_ms < 150 ? 'text-green-400' : ($svc->response_ms < 400 ? 'text-yellow-400' : 'text-red-400')) : 'text-gray-600' }}">
                         ⚡ {{ $svc->response_ms ? $svc->response_ms . 'ms' : '—ms' }}
                     </span>
                     @if($svc->auth_type && $svc->auth_type !== 'none')
@@ -54,6 +54,15 @@
                     </button>
                 </div>
                 <div class="flex items-center gap-1.5">
+                    <input type="number" id="input-time-{{ $svc->id }}" value="1" min="1"
+                        class="w-10 bg-gray-800 border border-gray-700 rounded text-[10px] mono text-center text-gray-300 outline-none focus:border-blue-500">
+
+                    <select id="unit-time-{{ $svc->id }}"
+                        class="bg-gray-800 border border-gray-700 rounded text-[10px] mono text-gray-400 outline-none">
+                        <option value="m">mnt</option>
+                        <option value="h">jam</option>
+                        <option value="d">hari</option>
+                    </select>
                     <button id="mute-svc-{{ $svc->id }}" onclick="toggleMuteService({{ $svc->id }})"
                         class="w-7 h-7 flex items-center justify-center rounded border border-gray-700 text-gray-500 hover:text-white text-xs transition"
                         title="Klik untuk mute service ini">
