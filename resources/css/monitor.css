@@ -99,3 +99,6 @@ body {
 .alarm-pulse {
     animation: alarm-pulse 1s ease-in-out infinite;
 }
+#prog-bar {
+    transition: width 0.1s linear;
+}

@@ -114,22 +114,28 @@ window.trackStatusChange = function(id, newStatus) {
     const prev = window.prevStatus[sid];
     window.prevStatus[sid] = newStatus;
 
+    const card = document.getElementById(`card-${sid}`);
+    if (card) {
+        card.dataset.status = newStatus; 
+    }
+
     if (newStatus === 'offline' && prev !== 'offline' && prev !== undefined) {
         if (Date.now() > alert_until) {
             if (!window.mutedServices.has(sid)) {
                 startAlarm();
                 updatePulse(id, true);
             }
-        } else {
-            console.log("🔕 Ada offline baru (" + sid + "), tapi alarm lagi di-snooze.");
         }
     }
-
     if (newStatus === 'online' && prev === 'offline') {
         window.mutedServices.delete(sid);
         updateMuteBtn(id, false);
         updatePulse(id, false);
-        if (!anyStillAlarming()) stopAlarm(false);
+        
+        if (!anyStillAlarming()) {
+            console.log("✅ Semua service sudah sehat. Mematikan alarm...");
+            stopAlarm(true); 
+        }
     }
     return false;
 }

@@ -150,7 +150,7 @@ window.sortCards = function () {
     cards.forEach((c) => grid.appendChild(c));
 };
 
-window.openEdit = function(btn){
+window.openEdit = function (btn) {
     const d = btn.dataset;
     document.getElementById("form-edit").action = `/services/${d.id}`;
     document.getElementById("edit-name").value = d.name;
@@ -161,7 +161,7 @@ window.openEdit = function(btn){
     document.getElementById("edit-auth-value").value = d.authValue || "";
     toggleAuthValue("edit");
     document.getElementById("modal-edit").classList.remove("hidden");
-}
+};
 
 window.toggleAuto = function () {
     autoOn = !autoOn;
@@ -196,16 +196,17 @@ function applyFilter() {
 }
 
 function updateCard(data) {
+    const card = document.getElementById("card-" + data.id);
+    card.dataset.status = data.status;
+
     if (window.trackStatusChange)
         window.trackStatusChange(data.id, data.status);
-    const card = document.getElementById("card-" + data.id);
     if (!card) return;
 
     card.className =
         card.className.replace(/card-(online|offline|unknown)/g, "") +
         " card-" +
         data.status;
-    card.dataset.status = data.status;
 
     const badge = document.getElementById("badge-" + data.id);
     if (badge) {
@@ -266,19 +267,32 @@ function updateTopStats() {
     }
 }
 
+let isChecking = false;
+
 function startProg() {
     stopProg();
     progVal = 100;
+
     const step = 100 / (intervalSec * 10);
+
     progTimer = setInterval(() => {
+        if (isChecking) return;
+
         progVal = Math.max(0, progVal - step);
         const bar = document.getElementById("prog-bar");
         if (bar) bar.style.width = progVal + "%";
+
         if (progVal <= 0) {
-            window.checkAll();
-            progVal = 100;
+            handleAutoCheck();
         }
     }, 100);
+}
+
+async function handleAutoCheck() {
+    isChecking = true;
+    await window.checkAll();
+    isChecking = false;
+    progVal = 100;
 }
 
 function stopProg() {
