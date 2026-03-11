@@ -1,14 +1,16 @@
 window.prevStatus    = {};
 window.mutedServices = new Set();
 
-let alertCooldown = false;
-let COOLDOWN_MS   = 3000;
-let audioCtx      = null;
-let alertBuffer   = null;
-let activeSource  = null;
+let alertCooldown   = false;
+let COOLDOWN_MS     = 3000;
+let audioCtx        = null;
+let alertBuffer     = null;
+let activeSource    = null;
+let isLoadingSound  = false; 
 
 async function loadSound() {
-    if (alertBuffer) return;
+    if (alertBuffer || isLoadingSound) return;
+    isLoadingSound = true;
     try {
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         const res    = await fetch('/sounds/danger_sms.mp3');
@@ -16,11 +18,13 @@ async function loadSound() {
         alertBuffer  = await audioCtx.decodeAudioData(arrBuf);
     } catch (e) {
         console.warn('Failed to load alert sound:', e);
+    } finally {
+        isLoadingSound = false;
     }
 }
 
 function startAlarm() {
-    if (activeSource) return; 
+    if (activeSource) return;   
     if (alertCooldown) return; 
     try {
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -40,7 +44,10 @@ function startAlarm() {
 
 function stopAlarm() {
     if (!activeSource) return;
-    try { activeSource.stop(); } catch (e) {}
+    try {
+        activeSource.stop();
+        activeSource.disconnect(); 
+    } catch (e) {}
     activeSource = null;
 
     alertCooldown = true;
@@ -50,11 +57,7 @@ function stopAlarm() {
 function updatePulse(id, isAlarming) {
     const card = document.getElementById(`card-${id}`);
     if (!card) return;
-    if (isAlarming) {
-        card.classList.add('alarm-pulse');
-    } else {
-        card.classList.remove('alarm-pulse');
-    }
+    card.classList.toggle('alarm-pulse', isAlarming);
 }
 
 function anyStillAlarming() {
@@ -81,7 +84,6 @@ window.trackStatusChange = function(id, newStatus) {
         window.mutedServices.delete(sid);
         updateMuteBtn(id, false);
         updatePulse(id, false);
-
         if (!anyStillAlarming()) stopAlarm();
     }
 
