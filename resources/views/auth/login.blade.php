@@ -67,6 +67,10 @@
                     Masuk →
                 </button>
             </form>
+            <a href="{{ route('backup.restore-awal') }}"
+                class="text-xs mono text-gray-600 hover:text-gray-400 transition">
+                📥 Restore dari backup
+            </a>
         </div>
 
         <div class="text-center text-xs text-gray-700 mono mt-5">

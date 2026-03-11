@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\BackupController;
 use App\Http\Controllers\LogController;
 use App\Http\Controllers\CheckController;
 use App\Http\Controllers\LoginController;
@@ -38,3 +39,10 @@ Route::resource('users', UserController::class)->only(['index', 'store', 'update
 
 
 Route::get('/logs', [LogController::class, 'index'])->name('logs.index');
+
+Route::get('/backup', [BackupController::class, 'index'])->name('backup.index');
+Route::post('/backup/download', [BackupController::class, 'backup'])->name('backup.download');
+Route::post('/backup/restore', [BackupController::class, 'restore'])->name('backup.restore');
+
+Route::get('/restore-awal', [BackupController::class, 'restoreAwalForm'])->name('backup.restore-awal');
+Route::post('/restore-awal', [BackupController::class, 'restoreAwal'])->name('backup.restore-awal.store');
