@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -23,24 +24,81 @@
             background-position: right 10px center;
             padding-right: 28px;
         }
-        .filter-select:focus { border-color: #22c55e; color: #e5e7eb; }
 
-        .log-table thead tr { background: #0d1117; }
-        .log-table tbody tr { transition: background .12s; }
-        .log-table tbody tr:hover { background: rgba(255,255,255,.025); }
+        .filter-select:focus {
+            border-color: #22c55e;
+            color: #e5e7eb;
+        }
 
-        .badge { display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px; border-radius: 999px; font-size: 10px; font-family: ui-monospace, monospace; border-width: 1px; border-style: solid; }
-        .badge-online  { background: rgba(20,83,45,.35);  color: #4ade80; border-color: rgba(74,222,128,.2); }
-        .badge-offline { background: rgba(127,29,29,.35); color: #f87171; border-color: rgba(248,113,113,.2); }
-        .badge-unknown { background: rgba(31,41,55,.6);   color: #6b7280; border-color: rgba(107,114,128,.2); }
-        .badge-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+        .log-table thead tr {
+            background: #0d1117;
+        }
+
+        .log-table tbody tr {
+            transition: background .12s;
+        }
+
+        .log-table tbody tr:hover {
+            background: rgba(255, 255, 255, .025);
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 2px 9px;
+            border-radius: 999px;
+            font-size: 10px;
+            font-family: ui-monospace, monospace;
+            border-width: 1px;
+            border-style: solid;
+        }
+
+        .badge-online {
+            background: rgba(20, 83, 45, .35);
+            color: #4ade80;
+            border-color: rgba(74, 222, 128, .2);
+        }
+
+        .badge-offline {
+            background: rgba(127, 29, 29, .35);
+            color: #f87171;
+            border-color: rgba(248, 113, 113, .2);
+        }
+
+        .badge-unknown {
+            background: rgba(31, 41, 55, .6);
+            color: #6b7280;
+            border-color: rgba(107, 114, 128, .2);
+        }
+
+        .badge-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
 
         .page-btn {
-            padding: 5px 12px; border-radius: 7px; font-size: 11px; font-family: ui-monospace, monospace;
-            background: #111827; border: 1px solid #1f2937; color: #6b7280; transition: all .15s;
+            padding: 5px 12px;
+            border-radius: 7px;
+            font-size: 11px;
+            font-family: ui-monospace, monospace;
+            background: #111827;
+            border: 1px solid #1f2937;
+            color: #6b7280;
+            transition: all .15s;
         }
-        .page-btn:not([disabled]):hover { background: #1f2937; color: #d1d5db; }
-        .page-btn[disabled] { opacity: .4; cursor: default; }
+
+        .page-btn:not([disabled]):hover {
+            background: #1f2937;
+            color: #d1d5db;
+        }
+
+        .page-btn[disabled] {
+            opacity: .4;
+            cursor: default;
+        }
     </style>
 </head>
 
@@ -48,7 +106,9 @@
 
     <nav class="bg-gray-900 border-b border-gray-800 h-14 flex items-center px-6 gap-4 sticky top-0 z-50">
         <div class="flex items-center gap-2">
-            <div class="w-7 h-7 bg-green-500 rounded-md flex items-center justify-center text-black font-bold text-xs mono">NM</div>
+            <div
+                class="w-7 h-7 bg-green-500 rounded-md flex items-center justify-center text-black font-bold text-xs mono">
+                NM</div>
             <span class="font-bold text-sm mono">NetMonitor</span>
         </div>
         <div class="w-px h-5 bg-gray-700"></div>
@@ -82,7 +142,7 @@
         </div>
 
         <form method="GET" action="{{ route('logs.index') }}"
-              class="flex flex-wrap items-center gap-2 mb-5 p-3 bg-gray-900/60 border border-gray-800 rounded-xl">
+            class="flex flex-wrap items-center gap-2 mb-5 p-3 bg-gray-900/60 border border-gray-800 rounded-xl">
 
             <select name="service_id" class="filter-select">
                 <option value="">Semua Service</option>
@@ -95,7 +155,7 @@
 
             <select name="status" class="filter-select">
                 <option value="">Semua Status</option>
-                <option value="online"  {{ request('status') == 'online'  ? 'selected' : '' }}>Online</option>
+                <option value="online" {{ request('status') == 'online' ? 'selected' : '' }}>Online</option>
                 <option value="offline" {{ request('status') == 'offline' ? 'selected' : '' }}>Offline</option>
             </select>
 
@@ -112,7 +172,7 @@
 
             <select name="month" class="filter-select">
                 <option value="">Bulan</option>
-                @foreach(['01'=>'Januari','02'=>'Februari','03'=>'Maret','04'=>'April','05'=>'Mei','06'=>'Juni','07'=>'Juli','08'=>'Agustus','09'=>'September','10'=>'Oktober','11'=>'November','12'=>'Desember'] as $num => $name)
+                @foreach(['01' => 'Januari', '02' => 'Februari', '03' => 'Maret', '04' => 'April', '05' => 'Mei', '06' => 'Juni', '07' => 'Juli', '08' => 'Agustus', '09' => 'September', '10' => 'Oktober', '11' => 'November', '12' => 'Desember'] as $num => $name)
                     <option value="{{ $num }}" {{ request('month') == $num ? 'selected' : '' }}>{{ $name }}</option>
                 @endforeach
             </select>
@@ -128,13 +188,18 @@
             <div class="ml-auto flex items-center gap-2">
                 @if(request('service_id') || request('status') || request('day') || request('month') || request('year'))
                     <a href="{{ route('logs.index') }}"
-                       class="px-3 py-1.5 text-[11px] mono text-gray-500 hover:text-red-400 border border-gray-800 hover:border-red-900 rounded-lg transition">
+                        class="px-3 py-1.5 text-[11px] mono text-gray-500 hover:text-red-400 border border-gray-800 hover:border-red-900 rounded-lg transition">
                         × Reset
                     </a>
                 @endif
                 <button type="submit"
                     class="px-4 py-1.5 bg-green-600 hover:bg-green-500 text-black font-bold rounded-lg text-[11px] mono transition shadow-[0_0_12px_rgba(34,197,94,.25)]">
                     Apply Filter
+                </button>
+
+                <button type="button" onclick="document.getElementById('modal-reset-logs').classList.remove('hidden')"
+                    class="px-3 py-1.5 text-[11px] mono text-red-500 hover:text-red-400 hover:bg-red-900/20 border border-red-900/40 hover:border-red-800 rounded-lg transition">
+                    🗑 Reset Logs
                 </button>
             </div>
         </form>
@@ -162,7 +227,9 @@
                             <td class="px-4 py-3">
                                 <span class="text-gray-200 font-semibold">{{ $log->service->name ?? '—' }}</span>
                                 @if($log->service)
-                                    <div class="text-gray-600 text-[10px] mt-0.5 truncate max-w-[200px]">{{ $log->service->url }}</div>
+                                    <div class="text-gray-600 text-[10px] mt-0.5 truncate max-w-[200px]">
+                                        {{ $log->service->url }}
+                                    </div>
                                 @endif
                             </td>
 
@@ -224,7 +291,8 @@
 
         @if($logs->hasPages())
             <div class="mt-4 flex items-center justify-between text-[11px] mono text-gray-600">
-                <span>Halaman <span class="text-gray-400">{{ $logs->currentPage() }}</span> dari <span class="text-gray-400">{{ $logs->lastPage() }}</span></span>
+                <span>Halaman <span class="text-gray-400">{{ $logs->currentPage() }}</span> dari <span
+                        class="text-gray-400">{{ $logs->lastPage() }}</span></span>
                 <div class="flex gap-1.5">
                     @if($logs->onFirstPage())
                         <button disabled class="page-btn">← Prev</button>
@@ -240,7 +308,14 @@
                 </div>
             </div>
         @endif
-
+        @include('logs.partials._modal-warning', [
+            'id' => 'modal-reset-logs',
+            'title' => 'Reset Semua Log',
+            'subtitle' => 'Seluruh riwayat log akan dihapus permanen',
+            'action' => route('logs.reset'),
+            'method' => 'POST',
+            'confirmText' => 'Ya, Reset',
+        ])
     </div>
 </body>
 </html>
