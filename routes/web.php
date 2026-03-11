@@ -3,6 +3,7 @@
 use App\Http\Controllers\CheckController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\ServiceController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -31,3 +32,5 @@ Route::post('/check-all',   [CheckController::class, 'all'])->name('check.all');
 Route::get('/login',  [LoginController::class, 'index'])->name('login')->middleware('guest');
 Route::post('/login', [LoginController::class, 'store'])->name('login.store');
 Route::post('/logout',[LoginController::class, 'destroy'])->name('logout');
+
+Route::resource('users', UserController::class)->only(['index', 'store', 'update', 'destroy'])->middleware('auth');
