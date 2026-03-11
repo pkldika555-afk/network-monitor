@@ -6,7 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Users — NetMonitor</title>
     @vite(['resources/css/app.css', 'resources/css/monitor.css', 'resources/js/users.js'])
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; }
         .mono { font-family: 'IBM Plex Mono', monospace; }

@@ -7,9 +7,6 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Network Monitor</title>
     @vite(['resources/css/app.css', 'resources/css/monitor.css', 'resources/js/monitor.js', 'resources/js/assign.js', 'resources/js/sound.js', 'resources/js/delete.js'])
-    <link
-        href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
-        rel="stylesheet">
 
 </head>
 
