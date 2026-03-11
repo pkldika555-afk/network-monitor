@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\LogController;
 use App\Http\Controllers\CheckController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\ServiceController;
@@ -34,3 +35,6 @@ Route::post('/login', [LoginController::class, 'store'])->name('login.store');
 Route::post('/logout',[LoginController::class, 'destroy'])->name('logout');
 
 Route::resource('users', UserController::class)->only(['index', 'store', 'update', 'destroy'])->middleware('auth');
+
+
+Route::get('/logs', [LogController::class, 'index'])->name('logs.index');

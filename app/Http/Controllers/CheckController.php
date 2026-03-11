@@ -13,6 +13,7 @@ class CheckController extends Controller
     {
         $service = Services::findOrFail($id);
         $result = $this->ping($service);
+        $previousStatus = $service->status;
 
         $service->update([
             'status' => $result['status'],
@@ -20,46 +21,43 @@ class CheckController extends Controller
             'last_checked_at' => now(),
         ]);
 
-        CheckLog::create([
-            'service_id' => $service->id,
-            'status' => $result['status'],
-            'response_ms' => $result['response_ms'],
-            'http_code' => $result['http_code'],
-            'error_message' => $result['error_message'],
-            'triggered_by' => 'manual',
-            'checked_at' => now(),
-        ]);
-        return response()->json([
-            'id' => $service->id,
-            'status' => $result['status'],
-            'response_ms' => $result['response_ms'],
-            'http_code' => $result['http_code'],
-            'checked_at' => now()->format('H:i:s'),
-        ]);
-    }
-    public function all(string $triggeredBy = 'manual')
-    {
-        $services = Services::where('is_active', true)->get();
-        $results = [];
-
-        foreach ($services as $service) {
-            $result = $this->ping($service);
-
-            $service->update([
-                'status' => $result['status'],
-                'response_ms' => $result['response_ms'],
-                'last_checked_at' => now(),
-            ]);
-
+        if ($result['status'] !== $previousStatus || $previousStatus === 'unknown') {
             CheckLog::create([
                 'service_id' => $service->id,
                 'status' => $result['status'],
                 'response_ms' => $result['response_ms'],
                 'http_code' => $result['http_code'],
                 'error_message' => $result['error_message'],
-                'triggered_by' => $triggeredBy,
+                'triggered_by' => 'manual',
                 'checked_at' => now(),
             ]);
+        }
+    }
+    public function all(string $triggeredBy = 'manual')
+    {
+        $services = Services::where('is_active', true)->get();
+        $results = [];
+
+
+        foreach ($services as $service) {
+            $result = $this->ping($service);
+            $previousStatus = $service->status;
+            $service->update([
+                'status' => $result['status'],
+                'response_ms' => $result['response_ms'],
+                'last_checked_at' => now(),
+            ]);
+            if ($result['status'] !== $previousStatus || $previousStatus === 'unknown') {
+                CheckLog::create([
+                    'service_id' => $service->id,
+                    'status' => $result['status'],
+                    'response_ms' => $result['response_ms'],
+                    'http_code' => $result['http_code'],
+                    'error_message' => $result['error_message'],
+                    'triggered_by' => $triggeredBy,
+                    'checked_at' => now(),
+                ]);
+            }
 
             $results[] = [
                 'id' => $service->id,

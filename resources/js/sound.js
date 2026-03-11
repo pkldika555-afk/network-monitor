@@ -229,19 +229,28 @@ window.saveCooldown = function() {
 function restoreCooldown() {
     const savedVal = localStorage.getItem("alert_cooldown_val");
     const savedUnit = localStorage.getItem("alert_cooldown_unit");
-    if (!savedVal || !savedUnit) return;
+    
+    if (savedVal && savedUnit) {
+        const multiplier = { s: 1, m: 60, h: 3600 };
+        const labelText = { s: "detik", m: "menit", h: "jam" };
+        COOLDOWN_MS = parseInt(savedVal) * multiplier[savedUnit] * 1000;
 
-    const multiplier = { s: 1, m: 60, h: 3600 };
-    const labelText = { s: "detik", m: "menit", h: "jam" };
-    COOLDOWN_MS = parseInt(savedVal) * multiplier[savedUnit] * 1000;
+        const input = document.getElementById("cooldown-input");
+        const unit = document.getElementById("cooldown-unit");
+        const label = document.getElementById("cooldown-label");
 
-    const input = document.getElementById("cooldown-input");
-    const unit = document.getElementById("cooldown-unit");
-    const label = document.getElementById("cooldown-label");
-    if (input) input.value = savedVal;
-    if (unit) unit.value = savedUnit;
-    if (label)
-        label.textContent = `Saat ini: ${savedVal} ${labelText[savedUnit]}`;
+        if (input) input.value = savedVal;
+        if (unit) unit.value = savedUnit;
+        
+        if (label) {
+            if (alert_until > Date.now()) {
+                label.textContent = "Snooze Aktif..."; 
+                label.classList.add('text-yellow-500');
+            } else {
+                label.textContent = `Saat ini: ${savedVal} ${labelText[savedUnit]}`;
+            }
+        }
+    }
 }
 
 window.initPrevStatus = function () {

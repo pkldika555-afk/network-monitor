@@ -54,7 +54,11 @@
             class="st-sidebar-btn w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs text-gray-400 hover:bg-gray-800 mb-0.5 transition">
             <span class="w-2 h-2 rounded-full bg-gray-600"></span> Unknown
         </button>
-
+        <div class="text-xs font-bold text-gray-600 tracking-widest uppercase px-2 py-2 mt-1">Master</div>
+        <a href="{{ route('logs.index') }}"
+            class="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs text-gray-400 hover:bg-gray-800 hover:text-gray-200 mb-0.5 transition">
+            📋 Logs/History
+        </a>
     </div>
     <div class="m-3 p-3 bg-gray-800/60 border border-gray-700 rounded-lg">
         <div class="text-xs text-gray-600 uppercase tracking-wider mb-2">Auto-Check</div>
