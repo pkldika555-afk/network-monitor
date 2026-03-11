@@ -32,3 +32,24 @@
     font-display: swap;
     src: url('../fonts/ibm-plex-mono-600.woff2') format('woff2');
 }
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: #030712; 
+}
+
+::-webkit-scrollbar-thumb {
+    background: #1f2937; 
+    border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #22c55e;
+}
+
+::-webkit-scrollbar-corner {
+    background: #030712;
+}
