@@ -239,18 +239,49 @@ function updateCard(data) {
 
     updateTopStats();
 }
+function updateSidebarCounters() {
+    const cards = document.querySelectorAll(".service-card");
+    const counts = { all: cards.length };
+    const offlinePerCat = {};
 
+    cards.forEach((card) => {
+        const slug = card.dataset.cat;
+        const status = card.dataset.status;
+
+        if (slug) {
+            counts[slug] = (counts[slug] || 0) + 1;
+            if (status === "offline") {
+                offlinePerCat[slug] = true;
+            }
+        }
+    });
+
+    const allEl = document.getElementById("cnt-all");
+    if (allEl) allEl.textContent = counts.all;
+
+    for (const [slug, count] of Object.entries(counts)) {
+        if (slug === "all") continue;
+
+        const el = document.getElementById("cnt-" + slug);
+        if (el) {
+            el.textContent = count;
+
+            if (offlinePerCat[slug]) {
+                el.className =
+                    "mono text-xs rounded-full px-1.5 text-red-400 bg-red-900/30 border border-red-800/50";
+            } else {
+                el.className =
+                    "mono text-xs rounded-full px-1.5 text-gray-500 bg-gray-800 border border-gray-700";
+            }
+        }
+    }
+}
 function updateTopStats() {
     const cards = document.querySelectorAll(".service-card");
-    const online = [...cards].filter(
-        (c) => c.dataset.status === "online",
-    ).length;
-    const offline = [...cards].filter(
-        (c) => c.dataset.status === "offline",
-    ).length;
-    const unknown = [...cards].filter(
-        (c) => c.dataset.status === "unknown",
-    ).length;
+
+    const online = [...cards].filter(c => c.dataset.status === "online").length;
+    const offline = [...cards].filter(c => c.dataset.status === "offline").length;
+    const unknown = [...cards].filter(c => c.dataset.status === "unknown").length;
 
     const elements = {
         "top-online": online,
@@ -265,6 +296,8 @@ function updateTopStats() {
         const el = document.getElementById(id);
         if (el) el.textContent = val;
     }
+
+    updateSidebarCounters();
 }
 
 let isChecking = false;
