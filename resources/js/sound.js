@@ -44,19 +44,14 @@ function startAlarm() {
     if (activeSource) return;
 
     if (Date.now() < alert_until) {
-        console.log(
-            "🚫 Masih masa cooldown, sisa waktu: " +
-                Math.round((alert_until - Date.now()) / 1000) +
-                " detik",
-        );
+        console.log("🤫 Ssshhh... Sistem masih dalam masa Global Snooze.");
         return;
     }
 
-    if (!audioCtx)
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    if (audioCtx.state === "suspended") {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') {
         audioCtx.resume().then(() => {
-            if (audioCtx.state === "running") playLoop();
+            if (audioCtx.state === 'running') playLoop();
         });
     } else {
         playLoop();
@@ -206,21 +201,31 @@ function showAudioBanner() {
 }
 
 window.saveCooldown = function() {
-    const val = parseInt(document.getElementById('cooldown-input').value);
-    const unit = document.getElementById('cooldown-unit').value;
-    
+    const input = document.getElementById('cooldown-input');
+    const unit  = document.getElementById('cooldown-unit');
+    const val   = parseInt(input.value);
+
+    if (isNaN(val) || val < 1) {
+        input.classList.add('border-red-500');
+        setTimeout(() => input.classList.remove('border-red-500'), 1500);
+        return;
+    }
+
     const multiplier = { s: 1, m: 60, h: 3600 };
-    COOLDOWN_MS = val * multiplier[unit] * 1000; 
+    COOLDOWN_MS = val * multiplier[unit.value] * 1000;
 
-    localStorage.setItem('alert_cooldown_val', val);
-    localStorage.setItem('alert_cooldown_unit', unit);
-    
-    alert_until = 0; 
-    
-    console.log("✅ Cooldown Updated to: " + COOLDOWN_MS + "ms");
-    if (typeof toast === 'function') toast("Cooldown Updated", "ok");
+    alert_until = Date.now() + COOLDOWN_MS;
+    localStorage.setItem('alert_until_timestamp', alert_until);
+
+    stopAlarm(true); 
+
+    const label = document.getElementById('cooldown-label');
+    if (label) {
+        label.classList.remove('text-gray-600');
+        label.classList.add('text-yellow-500', 'font-bold');
+        label.textContent = `Snooze Aktif...`;
+    }
 }
-
 function restoreCooldown() {
     const savedVal = localStorage.getItem("alert_cooldown_val");
     const savedUnit = localStorage.getItem("alert_cooldown_unit");
@@ -266,5 +271,41 @@ window.initPrevStatus = function () {
         }
     });
 };
-
+window.cancelCooldown = function() {
+    alert_until = 0;
+    localStorage.removeItem('alert_until_timestamp');
+    const label = document.getElementById('cooldown-label');
+    if (label) {
+        label.textContent = "Monitoring Aktif";
+        label.classList.remove('text-yellow-500', 'font-bold');
+    }
+    if (anyStillAlarming()) startAlarm();
+}
 document.addEventListener("DOMContentLoaded", window.initPrevStatus);
+setInterval(() => {
+    const label = document.getElementById('cooldown-label');
+    if (!label) return;
+
+    if (alert_until > Date.now()) {
+        const remainingMs = alert_until - Date.now();
+        
+        const h = Math.floor(remainingMs / 3600000);
+        const m = Math.floor((remainingMs % 3600000) / 60000);
+        const s = Math.floor((remainingMs % 60000) / 1000);
+
+        let timeStr = "";
+        if (h > 0) timeStr += `${h}j `;
+        if (m > 0 || h > 0) timeStr += `${m}m `;
+        timeStr += `${s}s`;
+
+        label.textContent = `Snooze: ${timeStr} lagi`;
+        label.classList.add('text-yellow-500');
+    } else {
+        if (label.classList.contains('text-yellow-500')) {
+            label.textContent = `Monitoring Aktif`;
+            label.classList.remove('text-yellow-500', 'font-bold');
+            label.classList.add('text-gray-600');
+            alert_until = 0; 
+        }
+    }
+}, 1000);

@@ -97,6 +97,10 @@
                 class="w-full mt-2 py-1.5 bg-gray-700 hover:bg-gray-600 border border-gray-600 text-xs mono text-gray-300 rounded transition">
                 Set Cooldown
             </button>
+            <button onclick="cancelCooldown()"
+                class="w-full mt-1 py-1 text-[10px] mono text-gray-500 hover:text-red-400 transition">
+                Cancel Snooze
+            </button>
             <div class="text-xs mono text-gray-600 mt-1.5" id="cooldown-label">Saat ini: 3 detik</div>
         </div>
     </div>
