@@ -279,19 +279,22 @@ window.cancelCooldown = function() {
         label.textContent = "Monitoring Aktif";
         label.classList.remove('text-yellow-500', 'font-bold');
     }
-    if (anyStillAlarming()) startAlarm();
+    if (anyStillAlarming()) {
+        console.log("📢 Masih ada service offline, alarm dinyalakan kembali.");
+        startAlarm();
+    }
 }
 document.addEventListener("DOMContentLoaded", window.initPrevStatus);
 setInterval(() => {
     const label = document.getElementById('cooldown-label');
-    if (!label) return;
+    if (!label || alert_until === 0) return;
 
-    if (alert_until > Date.now()) {
-        const remainingMs = alert_until - Date.now();
-        
-        const h = Math.floor(remainingMs / 3600000);
-        const m = Math.floor((remainingMs % 3600000) / 60000);
-        const s = Math.floor((remainingMs % 60000) / 1000);
+    const remaining = alert_until - Date.now();
+
+    if (remaining > 0) {
+        const h = Math.floor(remaining / 3600000);
+        const m = Math.floor((remaining % 3600000) / 60000);
+        const s = Math.floor((remaining % 60000) / 1000);
 
         let timeStr = "";
         if (h > 0) timeStr += `${h}j `;
@@ -301,11 +304,8 @@ setInterval(() => {
         label.textContent = `Snooze: ${timeStr} lagi`;
         label.classList.add('text-yellow-500');
     } else {
-        if (label.classList.contains('text-yellow-500')) {
-            label.textContent = `Monitoring Aktif`;
-            label.classList.remove('text-yellow-500', 'font-bold');
-            label.classList.add('text-gray-600');
-            alert_until = 0; 
-        }
+        console.log("⏰ Waktu Snooze habis, membangunkan alarm...");
+        
+        window.cancelCooldown(); 
     }
 }, 1000);
