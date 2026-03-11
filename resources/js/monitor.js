@@ -3,7 +3,7 @@ const getCSRF = () =>
     document.querySelector('meta[name="csrf-token"]')?.content;
 
 let autoOn = true;
-let intervalSec = 60;
+let intervalSec = 1;
 let progTimer = null;
 let progVal = 100;
 let activeCat = "";
