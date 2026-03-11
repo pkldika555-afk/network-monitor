@@ -33,8 +33,12 @@ class ServiceController extends Controller
             'auth_type' => 'in:none,bearer,basic',
             'auth_value' => 'nullable|string',
         ]);
-        $service = Services::create($validated);
-        return redirect()->route('services.index')->with('success', 'Services berhasil ditambahkan');
+        try {
+            $service = Services::create($validated);
+            return redirect()->route('services.index')->with('success', 'Services berhasil ditambahkan');
+        } catch (\Exception $e) {
+            return redirect()->back()->withInput()->with('error', 'Gagal menambahkan service: ' . $e->getMessage());
+        }
     }
     public function update(Request $request, Services $service)
     {
@@ -45,29 +49,41 @@ class ServiceController extends Controller
             'department' => 'required|string|max:150',
             'auth_type' => 'in:none,bearer,basic',
         ]);
-        $service->update($validated);
-        return redirect()->route('services.index')->with('success', 'Services berhasil diupdate');
+        try {
+            $service->update($validated);
+            return redirect()->route('services.index')->with('success', 'Services berhasil diupdate');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Gagal mengupdate service: ' . $e->getMessage());
+        }
     }
     public function destroy(Services $service)
     {
-        $service->delete();
-        return redirect()->route('services.index')->with('success', 'Services berhasil dihapus');
+        try {
+            $service->delete();
+            return redirect()->route('services.index')->with('success', 'Services berhasil dihapus');
+        } catch (\Exception $e) {
+            return redirect()->route('services.index')->with('error', 'Gagal menghapus service: ' . $e->getMessage());
+        }
     }
     public function assign(Request $request, Services $service)
-{
-    $request->validate([
-        'assigned_to' => 'nullable|string|max:150',
-    ]);
+    {
+        $request->validate([
+            'assigned_to' => 'nullable|string|max:150',
+        ]);
 
-    $service->update([
-        'assigned_to' => $request->assigned_to ?: null,
-        'assigned_at' => $request->assigned_to ? now() : null,
-    ]);
+        try {
+            $service->update([
+                'assigned_to' => $request->assigned_to ?: null,
+                'assigned_at' => $request->assigned_to ? now() : null,
+            ]);
 
-    return response()->json([
-        'id'          => $service->id,
-        'assigned_to' => $service->assigned_to,
-        'assigned_at' => $service->assigned_at?->format('d M Y H:i'),
-    ]);
-}
+            return response()->json([
+                'id'          => $service->id,
+                'assigned_to' => $service->assigned_to,
+                'assigned_at' => $service->assigned_at?->format('d M Y H:i'),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Gagal assign service: ' . $e->getMessage()], 500);
+        }
+    }
 }

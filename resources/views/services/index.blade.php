@@ -67,6 +67,12 @@
                     ✓ {{ session('success') }}
                 </div>
             @endif
+            @if(session('error'))
+                <div
+                    class="mb-5 px-4 py-2.5 bg-red-900/30 border border-red-800 rounded-lg text-red-400 text-xs mono fadein">
+                    ✗ {{ session('error') }}
+                </div>
+            @endif
             @include('services.partials._stats')
 
             <div class="flex items-center gap-3 mb-5">
