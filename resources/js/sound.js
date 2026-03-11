@@ -20,7 +20,8 @@ async function loadSound() {
 }
 
 function startAlarm() {
-    if (activeSource) return;
+    if (activeSource) return; 
+    if (alertCooldown) return; 
     try {
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -41,6 +42,9 @@ function stopAlarm() {
     if (!activeSource) return;
     try { activeSource.stop(); } catch (e) {}
     activeSource = null;
+
+    alertCooldown = true;
+    setTimeout(() => { alertCooldown = false; }, COOLDOWN_MS);
 }
 
 function updatePulse(id, isAlarming) {
