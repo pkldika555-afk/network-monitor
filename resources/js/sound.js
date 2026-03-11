@@ -1,44 +1,49 @@
-window.prevStatus    = {};
+window.prevStatus = {};
 window.mutedServices = new Set();
 
-let alertCooldown   = false;
-let COOLDOWN_MS     = 3000;
-let audioCtx        = null;
-let alertBuffer     = null;
-let activeSource    = null;
-let isLoadingSound  = false; 
+let alertCooldown = false;
+let COOLDOWN_MS = 3000;
+let audioCtx = null;
+let alertBuffer = null;
+let activeSource = null;
+let isLoadingSound = false;
 
 async function loadSound() {
     if (alertBuffer || isLoadingSound) return;
     isLoadingSound = true;
     try {
-        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const res    = await fetch('/sounds/danger_sms.mp3');
+        if (!audioCtx)
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const res = await fetch("/sounds/danger_sms.mp3");
         const arrBuf = await res.arrayBuffer();
-        alertBuffer  = await audioCtx.decodeAudioData(arrBuf);
+        alertBuffer = await audioCtx.decodeAudioData(arrBuf);
     } catch (e) {
-        console.warn('Failed to load alert sound:', e);
+        console.warn("Failed to load alert sound:", e);
     } finally {
         isLoadingSound = false;
     }
 }
 
 function startAlarm() {
-    if (activeSource) return;   
-    if (alertCooldown) return; 
+    if (activeSource) return;
+    if (alertCooldown) return;
     try {
-        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        if (audioCtx.state === 'suspended') audioCtx.resume();
-        if (!alertBuffer) { loadSound(); return; }
+        if (!audioCtx)
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === "suspended") audioCtx.resume();
+        if (!alertBuffer) {
+            loadSound();
+            return;
+        }
 
-        const source  = audioCtx.createBufferSource();
+        const source = audioCtx.createBufferSource();
         source.buffer = alertBuffer;
-        source.loop   = true;
+        source.loop = true;
         source.connect(audioCtx.destination);
         source.start(0);
         activeSource = source;
     } catch (e) {
-        console.warn('startAlarm error:', e);
+        console.warn("startAlarm error:", e);
     }
 }
 
@@ -46,41 +51,44 @@ function stopAlarm() {
     if (!activeSource) return;
     try {
         activeSource.stop();
-        activeSource.disconnect(); 
+        activeSource.disconnect();
     } catch (e) {}
     activeSource = null;
 
     alertCooldown = true;
-    setTimeout(() => { alertCooldown = false; }, COOLDOWN_MS);
+    setTimeout(() => {
+        alertCooldown = false;
+    }, COOLDOWN_MS);
 }
 
 function updatePulse(id, isAlarming) {
     const card = document.getElementById(`card-${id}`);
     if (!card) return;
-    card.classList.toggle('alarm-pulse', isAlarming);
+    card.classList.toggle("alarm-pulse", isAlarming);
 }
 
 function anyStillAlarming() {
-    return [...document.querySelectorAll('.service-card')]
-        .some(c => {
-            const cardId = c.id.replace('card-', '');
-            return c.dataset.status === 'offline' && !window.mutedServices.has(cardId);
-        });
+    return [...document.querySelectorAll(".service-card")].some((c) => {
+        const cardId = c.id.replace("card-", "");
+        return (
+            c.dataset.status === "offline" && !window.mutedServices.has(cardId)
+        );
+    });
 }
 
-window.trackStatusChange = function(id, newStatus) {
-    const sid  = String(id);
+window.trackStatusChange = function (id, newStatus) {
+    const sid = String(id);
     const prev = window.prevStatus[sid];
     window.prevStatus[sid] = newStatus;
 
-    if (newStatus === 'offline' && prev !== 'offline' && prev !== undefined) {
+    if (newStatus === "offline" && prev !== "offline" && prev !== undefined) {
         if (!window.mutedServices.has(sid)) {
             startAlarm();
             updatePulse(id, true);
         }
     }
 
-    if (newStatus === 'online' && prev === 'offline') {
+    if (newStatus === "online" && prev === "offline") {
         window.mutedServices.delete(sid);
         updateMuteBtn(id, false);
         updatePulse(id, false);
@@ -88,15 +96,15 @@ window.trackStatusChange = function(id, newStatus) {
     }
 
     return false;
-}
+};
 
-window.toggleMuteService = function(id) {
+window.toggleMuteService = function (id) {
     const sid = String(id);
     if (window.mutedServices.has(sid)) {
         window.mutedServices.delete(sid);
         updateMuteBtn(id, false);
         const card = document.getElementById(`card-${id}`);
-        if (card && card.dataset.status === 'offline') {
+        if (card && card.dataset.status === "offline") {
             startAlarm();
             updatePulse(id, true);
         }
@@ -106,73 +114,98 @@ window.toggleMuteService = function(id) {
         updatePulse(id, false);
         if (!anyStillAlarming()) stopAlarm();
     }
-}
+};
 
 function updateMuteBtn(id, isMuted) {
-    const btn  = document.getElementById(`mute-svc-${id}`);
+    const btn = document.getElementById(`mute-svc-${id}`);
     const icon = document.getElementById(`mute-icon-${id}`);
     if (!btn || !icon) return;
     if (isMuted) {
-        btn.classList.add('text-red-400', 'border-red-800/50', 'bg-red-900/20');
-        btn.classList.remove('text-gray-500', 'border-gray-700');
-        icon.textContent = '🔇';
-        btn.title = 'Muted — klik untuk unmute';
+        btn.classList.add("text-red-400", "border-red-800/50", "bg-red-900/20");
+        btn.classList.remove("text-gray-500", "border-gray-700");
+        icon.textContent = "🔇";
+        btn.title = "Muted — klik untuk unmute";
     } else {
-        btn.classList.remove('text-red-400', 'border-red-800/50', 'bg-red-900/20');
-        btn.classList.add('text-gray-500', 'border-gray-700');
-        icon.textContent = '🔔';
-        btn.title = 'Klik untuk mute service ini';
+        btn.classList.remove(
+            "text-red-400",
+            "border-red-800/50",
+            "bg-red-900/20",
+        );
+        btn.classList.add("text-gray-500", "border-gray-700");
+        icon.textContent = "🔔";
+        btn.title = "Klik untuk mute service ini";
     }
 }
 
-window.saveCooldown = function() {
-    const input = document.getElementById('cooldown-input');
-    const unit  = document.getElementById('cooldown-unit');
-    const val   = parseInt(input.value);
+window.saveCooldown = function () {
+    const input = document.getElementById("cooldown-input");
+    const unit = document.getElementById("cooldown-unit");
+    const val = parseInt(input.value);
 
     if (isNaN(val) || val < 1) {
-        input.classList.add('border-red-500');
-        setTimeout(() => input.classList.remove('border-red-500'), 1500);
+        input.classList.add("border-red-500");
+        setTimeout(() => input.classList.remove("border-red-500"), 1500);
         return;
     }
 
     const multiplier = { s: 1, m: 60, h: 3600 };
-    const labelText  = { s: 'detik', m: 'menit', h: 'jam' };
+    const labelText = { s: "detik", m: "menit", h: "jam" };
     COOLDOWN_MS = val * multiplier[unit.value] * 1000;
 
-    localStorage.setItem('alert_cooldown_val', val);
-    localStorage.setItem('alert_cooldown_unit', unit.value);
+    localStorage.setItem("alert_cooldown_val", val);
+    localStorage.setItem("alert_cooldown_unit", unit.value);
 
-    const label = document.getElementById('cooldown-label');
+    const label = document.getElementById("cooldown-label");
     if (label) label.textContent = `Saat ini: ${val} ${labelText[unit.value]}`;
-    if (typeof toast === 'function') toast(`Cooldown set: ${val} ${labelText[unit.value]}`, 'ok');
-}
+    if (typeof toast === "function")
+        toast(`Cooldown set: ${val} ${labelText[unit.value]}`, "ok");
+};
 
 function restoreCooldown() {
-    const savedVal  = localStorage.getItem('alert_cooldown_val');
-    const savedUnit = localStorage.getItem('alert_cooldown_unit');
+    const savedVal = localStorage.getItem("alert_cooldown_val");
+    const savedUnit = localStorage.getItem("alert_cooldown_unit");
     if (!savedVal || !savedUnit) return;
 
     const multiplier = { s: 1, m: 60, h: 3600 };
-    const labelText  = { s: 'detik', m: 'menit', h: 'jam' };
+    const labelText = { s: "detik", m: "menit", h: "jam" };
     COOLDOWN_MS = parseInt(savedVal) * multiplier[savedUnit] * 1000;
 
-    const input = document.getElementById('cooldown-input');
-    const unit  = document.getElementById('cooldown-unit');
-    const label = document.getElementById('cooldown-label');
+    const input = document.getElementById("cooldown-input");
+    const unit = document.getElementById("cooldown-unit");
+    const label = document.getElementById("cooldown-label");
     if (input) input.value = savedVal;
-    if (unit)  unit.value  = savedUnit;
-    if (label) label.textContent = `Saat ini: ${savedVal} ${labelText[savedUnit]}`;
+    if (unit) unit.value = savedUnit;
+    if (label)
+        label.textContent = `Saat ini: ${savedVal} ${labelText[savedUnit]}`;
 }
 
-window.initPrevStatus = function() {
-    document.querySelectorAll('.service-card').forEach(card => {
-        const id     = card.id.replace('card-', '');
+window.initPrevStatus = function () {
+    document.querySelectorAll(".service-card").forEach((card) => {
+        const id = card.id.replace("card-", "");
         const status = card.dataset.status;
         if (id && status) window.prevStatus[String(id)] = status;
     });
     restoreCooldown();
-    loadSound();
-}
+    loadSound().then(() => {
+        if (audioCtx && audioCtx.state === "suspended") {
+            showAudioBanner();
+        }
+    });
+};
+function showAudioBanner() {
+    if (document.getElementById("audio-banner")) return;
 
-document.addEventListener('DOMContentLoaded', window.initPrevStatus);
+    const banner = document.createElement("div");
+    banner.id = "audio-banner";
+    banner.className =
+        "fixed top-14 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-2.5 bg-yellow-900/80 border border-yellow-700 rounded-lg text-xs mono text-yellow-300 shadow-xl cursor-pointer";
+    banner.innerHTML =
+        "⚠️ Audio dinonaktifkan browser — klik di sini untuk mengaktifkan alarm";
+    banner.onclick = () => {
+        if (audioCtx) audioCtx.resume();
+        banner.remove();
+        if (anyStillAlarming()) startAlarm();
+    };
+    document.body.appendChild(banner);
+}
+document.addEventListener("DOMContentLoaded", window.initPrevStatus);
