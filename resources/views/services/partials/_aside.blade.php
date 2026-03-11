@@ -79,5 +79,23 @@
             <div id="prog-bar" class="h-full bg-green-500 rounded progress-fill" style="width:100%"></div>
         </div>
         <div class="mt-1.5 text-xs mono text-gray-600" id="last-scan">Belum pernah scan</div>
+        <div class="mt-3 pt-3 border-t border-gray-700">
+            <div class="text-xs text-gray-600 uppercase tracking-wider mb-2">Alert Cooldown</div>
+            <div class="flex items-center gap-2">
+                <input type="number" id="cooldown-input" min="1" max="999" value="3"
+                    class="w-full bg-gray-900 border border-gray-700 rounded text-xs mono text-gray-300 px-2 py-1 outline-none focus:border-blue-500 transition">
+                <select id="cooldown-unit"
+                    class="bg-gray-900 border border-gray-700 rounded text-xs mono text-gray-300 px-2 py-1 outline-none flex-shrink-0">
+                    <option value="s">detik</option>
+                    <option value="m">menit</option>
+                    <option value="h">jam</option>
+                </select>
+            </div>
+            <button onclick="saveCooldown()"
+                class="w-full mt-2 py-1 bg-gray-700 hover:bg-gray-600 text-xs mono text-gray-300 rounded transition">
+                Set Cooldown
+            </button>
+            <div class="text-xs mono text-gray-600 mt-1" id="cooldown-label">Saat ini: 3 detik</div>
+        </div>
     </div>
 </aside>
