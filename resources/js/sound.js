@@ -251,14 +251,21 @@ window.initPrevStatus = function () {
         if (id && status) window.prevStatus[String(id)] = status;
     });
 
+    const savedUntil = localStorage.getItem('alert_until_timestamp');
+    if (savedUntil) {
+        alert_until = parseInt(savedUntil);
+    }
+
     restoreCooldown();
 
     loadSound().then(() => {
         if (audioCtx && audioCtx.state === "suspended") {
             showAudioBanner();
         }
-        if (anyStillAlarming()) {
+
+        if (anyStillAlarming() && Date.now() > alert_until) {
             startAlarm();
+            
             document.querySelectorAll(".service-card").forEach((card) => {
                 const sid = card.id.replace("card-", "");
                 if (
@@ -268,6 +275,8 @@ window.initPrevStatus = function () {
                     updatePulse(sid, true);
                 }
             });
+        } else if (anyStillAlarming() && Date.now() <= alert_until) {
+            console.log("🔕 Status offline terdeteksi, tapi alarm ditahan oleh Global Snooze.");
         }
     });
 };
