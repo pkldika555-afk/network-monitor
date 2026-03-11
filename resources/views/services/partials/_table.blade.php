@@ -24,7 +24,7 @@
                     @endif
                     <span id="ms-{{ $svc->id }}"
                         class="text-xs mono px-2 py-0.5 rounded
-                                          {{ $svc->response_ms ? ($svc->response_ms < 150 ? 'text-green-400' : ($svc->response_ms < 400 ? 'text-yellow-400' : 'text-red-400')) : 'text-gray-600' }}">
+                                              {{ $svc->response_ms ? ($svc->response_ms < 150 ? 'text-green-400' : ($svc->response_ms < 400 ? 'text-yellow-400' : 'text-red-400')) : 'text-gray-600' }}">
                         ⚡ {{ $svc->response_ms ? $svc->response_ms . 'ms' : '—ms' }}
                     </span>
                     @if($svc->auth_type && $svc->auth_type !== 'none')
@@ -54,7 +54,11 @@
                     </button>
                 </div>
                 <div class="flex items-center gap-1.5">
-
+                    <button id="mute-svc-{{ $svc->id }}" onclick="toggleMuteService({{ $svc->id }})"
+                        class="w-7 h-7 flex items-center justify-center rounded border border-gray-700 text-gray-500 hover:text-white text-xs transition"
+                        title="Klik untuk mute service ini">
+                        <span id="mute-icon-{{ $svc->id }}">🔔</span>
+                    </button>
                     <button onclick="checkSingle({{ $svc->id }})" id="btn-{{ $svc->id }}"
                         class="w-7 h-7 flex items-center justify-center rounded border border-gray-700 hover:bg-gray-700 text-gray-500 hover:text-white text-xs transition"
                         title="Cek">
