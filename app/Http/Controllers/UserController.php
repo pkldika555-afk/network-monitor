@@ -13,8 +13,12 @@ class UserController extends Controller
      */
     public function index()
     {
-        $users = User::all();
-        return view('users.index', compact('users'));
+        try {
+            $users = User::all();
+            return view('users.index', compact('users'));
+        } catch (\Exception $e) {
+            return redirect()->route('services.index')->with('error', 'Gagal memuat users: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -34,14 +38,18 @@ class UserController extends Controller
             'password' => 'required|min:6|confirmed',
             'role' => 'required|in:admin,user',
         ]);
-        User::create([
-            'name' => $request->name,
-            'nrp' => $request->nrp,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'role' => $request->role,
-        ]);
-        return redirect()->route('users.index')->with('success', 'User berhasil ditambahkan.');
+        try {
+            User::create([
+                'name' => $request->name,
+                'nrp' => $request->nrp,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'role' => $request->role,
+            ]);
+            return redirect()->route('users.index')->with('success', 'User berhasil ditambahkan.');
+        } catch (\Exception $e) {
+            return redirect()->back()->withInput()->with('error', 'Gagal menambahkan user: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -71,14 +79,18 @@ class UserController extends Controller
             'email' => 'required|email|unique:users,email,' . $user->id,
             'role' => 'required|in:admin,user',
         ]);
-        $data = $request->only('name', 'nrp', 'email', 'role');
-        if ($request->filled('password')) {
-            $request->validate(['password' => 'min:6|confirmed']);
-            $data['password'] = Hash::make($request->password);
-        }
-        $user->update($data);
+        try {
+            $data = $request->only('name', 'nrp', 'email', 'role');
+            if ($request->filled('password')) {
+                $request->validate(['password' => 'min:6|confirmed']);
+                $data['password'] = Hash::make($request->password);
+            }
+            $user->update($data);
 
-        return redirect()->route('users.index')->with('success', 'User berhasil diupdate.');
+            return redirect()->route('users.index')->with('success', 'User berhasil diupdate.');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Gagal mengupdate user: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -90,7 +102,11 @@ class UserController extends Controller
             return redirect()->route('users.index')->with('error', 'Tidak bisa menghapus akun sendiri.');
         }
 
-        $user->delete();
-        return redirect()->route('users.index')->with('success', 'User berhasil dihapus.');
+        try {
+            $user->delete();
+            return redirect()->route('users.index')->with('success', 'User berhasil dihapus.');
+        } catch (\Exception $e) {
+            return redirect()->route('users.index')->with('error', 'Gagal menghapus user: ' . $e->getMessage());
+        }
     }
 }
