@@ -1,9 +1,11 @@
-const mutedServices = new Set(); 
+window.prevStatus    = {};
+window.mutedServices = new Set();
 
-let COOLDOWN_MS  = 3000;
-let audioCtx     = null;
-let alertBuffer  = null;
-let activeSource = null;
+let alertCooldown = false;
+let COOLDOWN_MS   = 3000;
+let audioCtx      = null;
+let alertBuffer   = null;
+let activeSource  = null;
 
 async function loadSound() {
     if (alertBuffer) return;
@@ -55,24 +57,24 @@ function anyStillAlarming() {
     return [...document.querySelectorAll('.service-card')]
         .some(c => {
             const cardId = c.id.replace('card-', '');
-            return c.dataset.status === 'offline' && !mutedServices.has(cardId);
+            return c.dataset.status === 'offline' && !window.mutedServices.has(cardId);
         });
 }
 
 window.trackStatusChange = function(id, newStatus) {
-    const sid  = String(id); 
-    const prev = prevStatus[sid];
-    prevStatus[sid] = newStatus;
+    const sid  = String(id);
+    const prev = window.prevStatus[sid];
+    window.prevStatus[sid] = newStatus;
 
     if (newStatus === 'offline' && prev !== 'offline' && prev !== undefined) {
-        if (!mutedServices.has(sid)) {
+        if (!window.mutedServices.has(sid)) {
             startAlarm();
             updatePulse(id, true);
         }
     }
 
     if (newStatus === 'online' && prev === 'offline') {
-        mutedServices.delete(sid);
+        window.mutedServices.delete(sid);
         updateMuteBtn(id, false);
         updatePulse(id, false);
 
@@ -84,8 +86,8 @@ window.trackStatusChange = function(id, newStatus) {
 
 window.toggleMuteService = function(id) {
     const sid = String(id);
-    if (mutedServices.has(sid)) {
-        mutedServices.delete(sid);
+    if (window.mutedServices.has(sid)) {
+        window.mutedServices.delete(sid);
         updateMuteBtn(id, false);
         const card = document.getElementById(`card-${id}`);
         if (card && card.dataset.status === 'offline') {
@@ -93,7 +95,7 @@ window.toggleMuteService = function(id) {
             updatePulse(id, true);
         }
     } else {
-        mutedServices.add(sid);
+        window.mutedServices.add(sid);
         updateMuteBtn(id, true);
         updatePulse(id, false);
         if (!anyStillAlarming()) stopAlarm();
@@ -161,7 +163,7 @@ window.initPrevStatus = function() {
     document.querySelectorAll('.service-card').forEach(card => {
         const id     = card.id.replace('card-', '');
         const status = card.dataset.status;
-        if (id && status) prevStatus[String(id)] = status; 
+        if (id && status) window.prevStatus[String(id)] = status;
     });
     restoreCooldown();
     loadSound();
