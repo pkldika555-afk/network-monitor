@@ -47,3 +47,5 @@ Route::post('/backup/restore', [BackupController::class, 'restore'])->name('back
 Route::get('/restore-awal', [BackupController::class, 'restoreAwalForm'])->name('backup.restore-awal');
 Route::post('/restore-awal', [BackupController::class, 'restoreAwal'])->name('backup.restore-awal.store');
 Route::post('/logs/reset', [LogController::class, 'resetLogs'])->name('logs.reset');
+
+Route::get('/services/stream', [ServiceController::class, 'stream'])->middleware('auth');

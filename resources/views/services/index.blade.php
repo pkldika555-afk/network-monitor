@@ -35,10 +35,12 @@
                 class="flex items-center gap-1.5 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg text-xs font-semibold mono transition">
                 <span id="icon-all">⟳</span> Cek Semua
             </button>
+            @if (Auth::user()->role === 'admiin')
             <button onclick="document.getElementById('modal-add').classList.remove('hidden')"
                 class="flex items-center gap-1.5 px-3 py-1.5 bg-green-500 hover:bg-green-400 text-black rounded-lg text-xs font-bold transition">
                 + Tambah
             </button>
+            @endif
             <form method="POST" action="{{ route('logout') }}">
                 @csrf
                 <button type="submit"

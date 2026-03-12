@@ -80,6 +80,7 @@
                         title="Cek">
                         <span id="icon-{{ $svc->id }}">⟳</span>
                     </button>
+                    @if (Auth::user()->role === 'admin')
                     <button onclick="openEdit(this)" data-id="{{ $svc->id }}" data-name="{{ $svc->name }}"
                         data-url="{{ $svc->url }}" data-cat="{{ $svc->category }}" data-dept="{{ $svc->department }}"
                         data-auth="{{ $svc->auth_type }}" data-auth-value="{{ $svc->auth_value }}"
@@ -91,6 +92,7 @@
                         class="w-7 h-7 flex items-center justify-center rounded border border-gray-700 hover:bg-red-900/30 hover:border-red-800 text-gray-500 hover:text-red-400 text-xs transition"
                         title="Hapus">✕
                     </button>
+                    @endif
                 </div>
             </div>
         </div>
