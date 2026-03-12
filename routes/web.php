@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', function () {
-    return view('welcome');
+    return redirect()->route('login');
 });
 Route::get('/services', [ServiceController::class, 'index'])->name('services.index')->middleware('auth');
 Route::post('/services', [ServiceController::class, 'store'])->name('services.store');
