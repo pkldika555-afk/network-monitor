@@ -36,17 +36,56 @@ class CheckController extends Controller
     public function all(string $triggeredBy = 'manual')
     {
         $services = Services::where('is_active', true)->get();
+
+        // Bangun semua request concurrent
+        $requests = function () use ($services) {
+            foreach ($services as $service) {
+                $request = Http::timeout(5)->connectTimeout(3)->async();
+
+                if ($service->auth_type === 'bearer' && $service->auth_value) {
+                    $request = $request->withToken($service->auth_value);
+                } elseif ($service->auth_type === 'basic' && $service->auth_value) {
+                    [$user, $pass] = explode(':', $service->auth_value, 2);
+                    $request = $request->withBasicAuth($user, $pass);
+                }
+
+                yield $service->id => $request->get($service->url);
+            }
+        };
+
+        $start = microtime(true);
+        $pool = Http::pool($requests);
         $results = [];
 
-
         foreach ($services as $service) {
-            $result = $this->ping($service);
+            $response = $pool[$service->id] ?? null;
+            $ms = (int) round((microtime(true) - $start) * 1000);
+
+            if ($response instanceof \Illuminate\Http\Client\Response) {
+                $isOnline = $response->status() < 500;
+                $result = [
+                    'status' => $isOnline ? 'online' : 'offline',
+                    'response_ms' => $ms,
+                    'http_code' => $response->status(),
+                    'error_message' => $isOnline ? null : 'HTTP ' . $response->status(),
+                ];
+            } else {
+                $result = [
+                    'status' => 'offline',
+                    'response_ms' => null,
+                    'http_code' => 0,
+                    'error_message' => $response?->getMessage() ?? 'Timeout / tidak bisa dijangkau',
+                ];
+            }
+
             $previousStatus = $service->status;
+
             $service->update([
                 'status' => $result['status'],
                 'response_ms' => $result['response_ms'],
                 'last_checked_at' => now(),
             ]);
+
             if ($result['status'] !== $previousStatus || $previousStatus === 'unknown') {
                 CheckLog::create([
                     'service_id' => $service->id,

@@ -1,10 +1,12 @@
 <aside class="w-52 bg-gray-900 border-r border-gray-800 flex flex-col flex-shrink-0">
     <div class="p-3 flex-1 overflow-y-auto">
+        @if (Auth::user()->role === 'admin')
         <div class="text-xs font-bold text-gray-600 tracking-widest uppercase px-2 py-2 mt-1">Master</div>
         <a href="{{ route('users.index') }}"
             class="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs text-gray-400 hover:bg-gray-800 hover:text-gray-200 mb-0.5 transition">
             👤 User Management
         </a>
+        @endif
 
         <div class="text-xs font-bold text-gray-600 tracking-widest uppercase px-2 py-2 mt-1">Kategori</div>
 
