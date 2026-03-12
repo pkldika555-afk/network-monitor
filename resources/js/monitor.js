@@ -391,7 +391,28 @@ window.updateMuteUI = function (id, isMuted) {
         if (card) card.style.opacity = "1";
     }
 };
+function initSSE() {
+    const evtSource = new EventSource('/services/stream');
 
+    evtSource.onmessage = (e) => {
+        const data = JSON.parse(e.data);
+        if (window._sseCount === undefined) {
+            window._sseCount = data.count;
+            window._sseUpdated = data.updated_at;
+            return;
+        }
+        if (data.count !== window._sseCount || data.updated_at !== window._sseUpdated) {
+            window.location.reload();
+        }
+    };
+
+    evtSource.onerror = () => {
+        evtSource.close();
+        setTimeout(initSSE, 1000);
+    };
+}
+
+initSSE();
 document.addEventListener("DOMContentLoaded", () => {
     startProg();
 

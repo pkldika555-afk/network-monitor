@@ -78,7 +78,7 @@ class ServiceController extends Controller
             ]);
 
             return response()->json([
-                'id'          => $service->id,
+                'id' => $service->id,
                 'assigned_to' => $service->assigned_to,
                 'assigned_at' => $service->assigned_at?->format('d M Y H:i'),
             ]);
@@ -86,4 +86,23 @@ class ServiceController extends Controller
             return response()->json(['error' => 'Gagal assign service: ' . $e->getMessage()], 500);
         }
     }
+public function stream()
+{
+    return response()->stream(function () {
+        while (true) {
+            $data = json_encode([
+                'count'      => Services::count(),
+                'updated_at' => Services::max('updated_at'),
+            ]);
+            echo "data: {$data}\n\n";
+            ob_flush();
+            flush();
+            sleep(1);
+        }
+    }, 200, [
+        'Content-Type'      => 'text/event-stream',
+        'Cache-Control'     => 'no-cache',
+        'X-Accel-Buffering' => 'no',
+    ]);
+}
 }
