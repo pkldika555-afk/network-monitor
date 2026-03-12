@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\CheckLog;
 use App\Models\Services;
+use DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Http\Client\Pool;
 
 class CheckController extends Controller
 {
@@ -33,89 +35,101 @@ class CheckController extends Controller
             ]);
         }
     }
-    public function all(string $triggeredBy = 'manual')
-    {
-        $services = Services::where('is_active', true)->get();
+ public function all(string $triggeredBy = 'manual')
+{
+    $services = Services::where('is_active', true)->get();
 
-        // Bangun semua request concurrent
-        $requests = function () use ($services) {
-            foreach ($services as $service) {
-                $request = Http::timeout(5)->connectTimeout(3)->async();
+    if ($services->isEmpty()) {
+        return response()->json(['total' => 0, 'online' => 0, 'offline' => 0, 'results' => []]);
+    }
 
-                if ($service->auth_type === 'bearer' && $service->auth_value) {
-                    $request = $request->withToken($service->auth_value);
-                } elseif ($service->auth_type === 'basic' && $service->auth_value) {
-                    [$user, $pass] = explode(':', $service->auth_value, 2);
-                    $request = $request->withBasicAuth($user, $pass);
-                }
+    $responses = Http::pool(fn (Pool $pool) =>
+        $services->map(fn ($service) =>
+            $this->buildRequest($pool, $service)->get($service->url)
+        )
+    );
 
-                yield $service->id => $request->get($service->url);
-            }
-        };
+    $results      = [];
+    $logsToInsert = [];
 
-        $start = microtime(true);
-        $pool = Http::pool($requests);
-        $results = [];
-
-        foreach ($services as $service) {
-            $response = $pool[$service->id] ?? null;
-            $ms = (int) round((microtime(true) - $start) * 1000);
-
-            if ($response instanceof \Illuminate\Http\Client\Response) {
-                $isOnline = $response->status() < 500;
-                $result = [
-                    'status' => $isOnline ? 'online' : 'offline',
-                    'response_ms' => $ms,
-                    'http_code' => $response->status(),
-                    'error_message' => $isOnline ? null : 'HTTP ' . $response->status(),
-                ];
-            } else {
-                $result = [
-                    'status' => 'offline',
-                    'response_ms' => null,
-                    'http_code' => 0,
-                    'error_message' => $response?->getMessage() ?? 'Timeout / tidak bisa dijangkau',
-                ];
-            }
-
+    DB::transaction(function () use ($services, $responses, $triggeredBy, &$results, &$logsToInsert) {
+        foreach ($services as $index => $service) {
+            $response       = $responses[$index];
             $previousStatus = $service->status;
 
+            $isOnline     = false;
+            $httpCode     = 0;
+            $errorMsg     = 'Timeout / Unreachable';
+            $responseTime = null;
+
+            if ($response instanceof \Illuminate\Http\Client\Response) {
+                $httpCode     = $response->status();
+                $isOnline     = $httpCode < 500;
+                $errorMsg     = $isOnline ? null : "HTTP $httpCode";
+                $responseTime = (int) round(($response->transferStats?->getTransferTime() ?? 0) * 1000);
+            } elseif ($response instanceof \Exception) {
+                $errorMsg = substr($response->getMessage(), 0, 255);
+            }
+
+            $currentStatus = $isOnline ? 'online' : 'offline';
+
             $service->update([
-                'status' => $result['status'],
-                'response_ms' => $result['response_ms'],
+                'status'          => $currentStatus,
+                'response_ms'     => $responseTime,
                 'last_checked_at' => now(),
             ]);
 
-            if ($result['status'] !== $previousStatus || $previousStatus === 'unknown') {
-                CheckLog::create([
-                    'service_id' => $service->id,
-                    'status' => $result['status'],
-                    'response_ms' => $result['response_ms'],
-                    'http_code' => $result['http_code'],
-                    'error_message' => $result['error_message'],
-                    'triggered_by' => $triggeredBy,
-                    'checked_at' => now(),
-                ]);
+            if ($currentStatus !== $previousStatus || $previousStatus === 'unknown') {
+                $logsToInsert[] = [
+                    'service_id'    => $service->id,
+                    'status'        => $currentStatus,
+                    'response_ms'   => $responseTime,
+                    'http_code'     => $httpCode,
+                    'error_message' => $errorMsg,
+                    'triggered_by'  => $triggeredBy,
+                    'checked_at'    => now(),
+                    'created_at'    => now(),
+                    'updated_at'    => now(),
+                ];
             }
 
             $results[] = [
-                'id' => $service->id,
-                'name' => $service->name,
-                'status' => $result['status'],
-                'response_ms' => $result['response_ms'],
+                'id'          => $service->id,
+                'name'        => $service->name,
+                'status'      => $currentStatus,
+                'response_ms' => $responseTime,
             ];
         }
 
-        $online = collect($results)->where('status', 'online')->count();
-        $offline = collect($results)->where('status', 'offline')->count();
+        if (!empty($logsToInsert)) {
+            CheckLog::insert($logsToInsert);
+        }
+    });
 
-        return response()->json([
-            'total' => count($results),
-            'online' => $online,
-            'offline' => $offline,
-            'results' => $results,
-        ]);
+    $stats = collect($results)->countBy('status');
+
+    return response()->json([
+        'total'   => count($results),
+        'online'  => $stats->get('online', 0),
+        'offline' => $stats->get('offline', 0),
+        'results' => $results,
+    ]);
+}
+
+private function buildRequest(Pool $pool, $service)
+{
+    $req = $pool->timeout(5)->connectTimeout(3);
+
+    if ($service->auth_type === 'bearer' && $service->auth_value) {
+        return $req->withToken($service->auth_value);
     }
+
+    if ($service->auth_type === 'basic' && $service->auth_value) {
+        return $req->withBasicAuth(...explode(':', $service->auth_value, 2));
+    }
+
+    return $req;
+}
     private function ping(Services $service): array
     {
         $start = microtime(true);
