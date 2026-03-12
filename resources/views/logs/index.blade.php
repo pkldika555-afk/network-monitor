@@ -136,9 +136,18 @@
                 <h1 class="text-base font-bold mono tracking-tight">History Log</h1>
                 <p class="text-[11px] text-gray-500 mono mt-0.5">Riwayat seluruh ping &amp; pengecekan service</p>
             </div>
-            <span class="text-[11px] mono text-gray-600 bg-gray-900 border border-gray-800 rounded-lg px-3 py-1.5">
-                {{ $logs->total() }} entri
-            </span>
+            <div class="flex items-center gap-2">
+                <span class="text-[11px] mono text-gray-600 bg-gray-900 border border-gray-800 rounded-lg px-3 py-1.5">
+                    Total Log: <span class="text-gray-300">{{ number_format($logs->total()) }}</span>
+                    @if(cache('logs_last_reset'))
+                        <span class="text-gray-700 mx-1.5">|</span>
+                        Terakhir di-reset:
+                        <span class="text-gray-400">
+                            {{ \Carbon\Carbon::parse(cache('logs_last_reset'))->diffForHumans() }}
+                        </span>
+                    @endif
+                </span>
+            </div>
         </div>
 
         <form method="GET" action="{{ route('logs.index') }}"

@@ -26,12 +26,20 @@ class LogController extends Controller
             ->get();
 
         $services = \App\Models\Services::orderBy('name')->get();
+        $lastreset = CheckLog::min('checked_at');
 
-        return view('logs.index', compact('logs', 'services', 'categories'));
+
+        return view('logs.index', [
+            'logs' => $logs,
+            'services' => $services,
+            'lastReset' => cache('logs_last_reset'),
+        ]);
     }
     public function resetLogs()
     {
         CheckLog::truncate();
+        cache(['logs_last_reset' => now()], now()->addDays(30));
         return back()->with('success', 'Semua riwayat log telah dibersihkan!');
     }
+ 
 }
