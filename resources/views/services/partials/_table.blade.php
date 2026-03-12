@@ -1,9 +1,11 @@
 <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3" id="cards-grid">
     @forelse($services as $svc)
         <div class="service-card bg-gray-900 border border-gray-800 rounded-xl overflow-hidden card-{{ $svc->status }} fadein"
+            id="card-{{ $svc->id }}"
+            data-id="{{ $svc->id }}"
             data-name="{{ strtolower($svc->name) }}" data-url="{{ strtolower($svc->url) }}"
             data-dept="{{ strtolower($svc->department ?? '') }}" data-cat="{{ $svc->category }}"
-            data-status="{{ $svc->status }}" id="card-{{ $svc->id }}">
+            data-status="{{ $svc->status }}">
 
             <div class="p-4 pb-2">
                 <div class="flex items-start justify-between gap-2">
@@ -24,7 +26,7 @@
                     @endif
                     <span id="ms-{{ $svc->id }}"
                         class="text-xs mono px-2 py-0.5 rounded
-                                                  {{ $svc->response_ms ? ($svc->response_ms < 150 ? 'text-green-400' : ($svc->response_ms < 400 ? 'text-yellow-400' : 'text-red-400')) : 'text-gray-600' }}">
+                                                                  {{ $svc->response_ms ? ($svc->response_ms < 150 ? 'text-green-400' : ($svc->response_ms < 400 ? 'text-yellow-400' : 'text-red-400')) : 'text-gray-600' }}">
                         ⚡ {{ $svc->response_ms ? $svc->response_ms . 'ms' : '—ms' }}
                     </span>
                     @if($svc->auth_type && $svc->auth_type !== 'none')
@@ -64,9 +66,14 @@
                         <option value="d">hari</option>
                     </select>
                     <button id="mute-svc-{{ $svc->id }}" onclick="toggleMuteService({{ $svc->id }})"
-                        class="w-7 h-7 flex items-center justify-center rounded border border-gray-700 text-gray-500 hover:text-white text-xs transition"
+                        class="relative w-7 h-7 flex items-center justify-center rounded border border-gray-700 text-gray-500 hover:text-white text-xs transition"
                         title="Klik untuk mute service ini">
+
                         <span id="mute-icon-{{ $svc->id }}">🔔</span>
+
+                        <span id="timer-label-{{ $svc->id }}"
+                            class="hidden absolute -top-2 -right-2 bg-yellow-600 text-white text-[9px] px-1.5 py-0.5 rounded-full font-bold shadow-lg border border-gray-900 z-20 min-w-[20px] text-center">
+                        </span>
                     </button>
                     <button onclick="checkSingle({{ $svc->id }})" id="btn-{{ $svc->id }}"
                         class="w-7 h-7 flex items-center justify-center rounded border border-gray-700 hover:bg-gray-700 text-gray-500 hover:text-white text-xs transition"

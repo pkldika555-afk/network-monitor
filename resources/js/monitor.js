@@ -1,4 +1,3 @@
-// Ambil CSRF dari meta tag
 const getCSRF = () =>
     document.querySelector('meta[name="csrf-token"]')?.content;
 
@@ -9,7 +8,13 @@ let progVal = 100;
 let activeCat = "";
 let activeSt = "";
 
-// --- FUNGSI GLOBAL (Daftarkan ke window) ---
+if (!window.mutedServices || window.mutedServices instanceof Set) {
+    window.mutedServices = JSON.parse(localStorage.getItem('muted_services') || '{}');
+}
+
+window.saveMuteToStorage = function () {
+    localStorage.setItem('muted_services', JSON.stringify(window.mutedServices));
+};
 
 window.checkSingle = async function (id) {
     const btn = document.getElementById("btn-" + id);
@@ -23,10 +28,7 @@ window.checkSingle = async function (id) {
     try {
         const res = await fetch(`/check/${id}`, {
             method: "POST",
-            headers: {
-                "X-CSRF-TOKEN": getCSRF(),
-                Accept: "application/json",
-            },
+            headers: { "X-CSRF-TOKEN": getCSRF(), Accept: "application/json" },
         });
         const data = await res.json();
         updateCard(data);
@@ -60,10 +62,7 @@ window.checkAll = async function () {
     try {
         const res = await fetch("/check-all", {
             method: "POST",
-            headers: {
-                "X-CSRF-TOKEN": getCSRF(),
-                Accept: "application/json",
-            },
+            headers: { "X-CSRF-TOKEN": getCSRF(), Accept: "application/json" },
         });
         const data = await res.json();
         data.results.forEach((r) => updateCard(r));
@@ -71,8 +70,7 @@ window.checkAll = async function () {
 
         const lastScanEl = document.getElementById("last-scan");
         if (lastScanEl)
-            lastScanEl.textContent =
-                "Terakhir: " + new Date().toLocaleTimeString("id-ID");
+            lastScanEl.textContent = "Terakhir: " + new Date().toLocaleTimeString("id-ID");
 
         toast(
             `Selesai — ${data.online}/${data.total} online`,
@@ -86,12 +84,10 @@ window.checkAll = async function () {
         btn.disabled = false;
         icon.className = "";
         icon.textContent = "⟳";
-        document
-            .querySelectorAll('[id^="icon-"]:not(#icon-all)')
-            .forEach((el) => {
-                el.className = "";
-                el.textContent = "⟳";
-            });
+        document.querySelectorAll('[id^="icon-"]:not(#icon-all)').forEach((el) => {
+            el.className = "";
+            el.textContent = "⟳";
+        });
     }
 };
 
@@ -102,11 +98,7 @@ window.filterCat = function (cat) {
         b.classList.add("text-gray-400");
     });
     const activeId = cat
-        ? "cat-btn-" +
-          cat
-              .toLowerCase()
-              .replace(/\s+/g, "-")
-              .replace(/[^a-z0-9-]/g, "")
+        ? "cat-btn-" + cat.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "")
         : "cat-btn-all";
     const btn = document.getElementById(activeId);
     if (btn) {
@@ -130,9 +122,7 @@ window.filterStatus = function (st) {
     applyFilter();
 };
 
-window.filterCards = function () {
-    applyFilter();
-};
+window.filterCards = function () { applyFilter(); };
 
 window.sortCards = function () {
     const sort = document.getElementById("sort-sel").value;
@@ -142,10 +132,7 @@ window.sortCards = function () {
         cards.sort((a, b) => a.dataset.name.localeCompare(b.dataset.name));
     } else {
         const order = { online: 0, offline: 1, unknown: 2 };
-        cards.sort(
-            (a, b) =>
-                (order[a.dataset.status] || 2) - (order[b.dataset.status] || 2),
-        );
+        cards.sort((a, b) => (order[a.dataset.status] || 2) - (order[b.dataset.status] || 2));
     }
     cards.forEach((c) => grid.appendChild(c));
 };
@@ -179,16 +166,10 @@ window.setIntervalTime = function () {
     resetProg();
 };
 
-// --- FUNGSI INTERNAL ---
-
 function applyFilter() {
     const q = document.getElementById("search").value.toLowerCase();
     document.querySelectorAll(".service-card").forEach((card) => {
-        const mq =
-            !q ||
-            card.dataset.name.includes(q) ||
-            card.dataset.url.includes(q) ||
-            card.dataset.dept.includes(q);
+        const mq = !q || card.dataset.name.includes(q) || card.dataset.url.includes(q) || card.dataset.dept.includes(q);
         const mc = !activeCat || card.dataset.cat === activeCat;
         const ms = !activeSt || card.dataset.status === activeSt;
         card.style.display = mq && mc && ms ? "" : "none";
@@ -197,35 +178,28 @@ function applyFilter() {
 
 function updateCard(data) {
     const card = document.getElementById("card-" + data.id);
+    if (!card) return;
+
     card.dataset.status = data.status;
 
     if (window.trackStatusChange)
         window.trackStatusChange(data.id, data.status);
-    if (!card) return;
 
     card.className =
         card.className.replace(/card-(online|offline|unknown)/g, "") +
-        " card-" +
-        data.status;
+        " card-" + data.status;
 
     const badge = document.getElementById("badge-" + data.id);
     if (badge) {
-        if (data.status === "online") {
-            badge.innerHTML = `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-green-900/50 text-green-400 border border-green-800"><span class="w-1.5 h-1.5 rounded-full bg-green-400"></span>Online</span>`;
-        } else {
-            badge.innerHTML = `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-red-900/50 text-red-400 border border-red-800"><span class="w-1.5 h-1.5 rounded-full bg-red-400"></span>Offline</span>`;
-        }
+        badge.innerHTML = data.status === "online"
+            ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-green-900/50 text-green-400 border border-green-800"><span class="w-1.5 h-1.5 rounded-full bg-green-400"></span>Online</span>`
+            : `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-red-900/50 text-red-400 border border-red-800"><span class="w-1.5 h-1.5 rounded-full bg-red-400"></span>Offline</span>`;
     }
 
     const msEl = document.getElementById("ms-" + data.id);
     if (msEl) {
         if (data.response_ms) {
-            const c =
-                data.response_ms < 150
-                    ? "text-green-400"
-                    : data.response_ms < 400
-                      ? "text-yellow-400"
-                      : "text-red-400";
+            const c = data.response_ms < 150 ? "text-green-400" : data.response_ms < 400 ? "text-yellow-400" : "text-red-400";
             msEl.className = `text-xs mono px-2 py-0.5 rounded ${c}`;
             msEl.textContent = `⚡ ${data.response_ms}ms`;
         } else {
@@ -239,6 +213,7 @@ function updateCard(data) {
 
     updateTopStats();
 }
+
 function updateSidebarCounters() {
     const cards = document.querySelectorAll(".service-card");
     const counts = { all: cards.length };
@@ -247,12 +222,9 @@ function updateSidebarCounters() {
     cards.forEach((card) => {
         const slug = card.dataset.cat;
         const status = card.dataset.status;
-
         if (slug) {
             counts[slug] = (counts[slug] || 0) + 1;
-            if (status === "offline") {
-                offlinePerCat[slug] = true;
-            }
+            if (status === "offline") offlinePerCat[slug] = true;
         }
     });
 
@@ -261,41 +233,25 @@ function updateSidebarCounters() {
 
     for (const [slug, count] of Object.entries(counts)) {
         if (slug === "all") continue;
-
         const el = document.getElementById("cnt-" + slug);
         if (el) {
             el.textContent = count;
-
-            if (offlinePerCat[slug]) {
-                el.className =
-                    "mono text-xs rounded-full px-1.5 text-red-400 bg-red-900/30 border border-red-800/50";
-            } else {
-                el.className =
-                    "mono text-xs rounded-full px-1.5 text-gray-500 bg-gray-800 border border-gray-700";
-            }
+            el.className = offlinePerCat[slug]
+                ? "mono text-xs rounded-full px-1.5 text-red-400 bg-red-900/30 border border-red-800/50"
+                : "mono text-xs rounded-full px-1.5 text-gray-500 bg-gray-800 border border-gray-700";
         }
     }
 }
+
 function updateTopStats() {
     const cards = document.querySelectorAll(".service-card");
-
-    const online = [...cards].filter(
-        (c) => c.dataset.status === "online",
-    ).length;
-    const offline = [...cards].filter(
-        (c) => c.dataset.status === "offline",
-    ).length;
-    const unknown = [...cards].filter(
-        (c) => c.dataset.status === "unknown",
-    ).length;
+    const online = [...cards].filter((c) => c.dataset.status === "online").length;
+    const offline = [...cards].filter((c) => c.dataset.status === "offline").length;
+    const unknown = [...cards].filter((c) => c.dataset.status === "unknown").length;
 
     const elements = {
-        "top-online": online,
-        "top-offline": offline,
-        "top-unknown": unknown,
-        "sum-total": cards.length,
-        "sum-online": online,
-        "sum-offline": offline,
+        "top-online": online, "top-offline": offline, "top-unknown": unknown,
+        "sum-total": cards.length, "sum-online": online, "sum-offline": offline,
     };
 
     for (const [id, val] of Object.entries(elements)) {
@@ -311,51 +267,16 @@ let isChecking = false;
 function startProg() {
     stopProg();
     progVal = 100;
-
     const step = 100 / (intervalSec * 10);
-
     progTimer = setInterval(() => {
         if (isChecking) return;
-
         progVal = Math.max(0, progVal - step);
         const bar = document.getElementById("prog-bar");
         if (bar) bar.style.width = progVal + "%";
-
-        if (progVal <= 0) {
-            handleAutoCheck();
-        }
+        if (progVal <= 0) handleAutoCheck();
     }, 100);
 }
-setInterval(() => {
-    const now = Date.now();
-    let anyWokeUp = false;
 
-    for (const sid in window.mutedServices) {
-        const expiry = window.mutedServices[sid];
-        const remaining = expiry - now;
-        const label = document.getElementById(`timer-label-${sid}`);
-
-        if (remaining > 0) {
-            if (label) {
-                label.classList.remove("hidden");
-                if (remaining > 3600000) {
-                    label.textContent = Math.ceil(remaining / 3600000) + "h";
-                } else {
-                    label.textContent = Math.ceil(remaining / 60000) + "m";
-                }
-            }
-        } else {
-            delete window.mutedServices[sid];
-            updateMuteUI(sid, false);
-            anyWokeUp = true;
-        }
-    }
-
-    if (anyWokeUp) {
-        saveMuteToStorage();
-        if (anyStillAlarming()) startAlarm();
-    }
-}, 1000);
 async function handleAutoCheck() {
     isChecking = true;
     await window.checkAll();
@@ -366,6 +287,7 @@ async function handleAutoCheck() {
 function stopProg() {
     if (progTimer) clearInterval(progTimer);
 }
+
 function resetProg() {
     stopProg();
     if (autoOn) startProg();
@@ -375,42 +297,16 @@ function toast(msg, type = "info") {
     const c = document.getElementById("toast-container");
     if (!c) return;
     const el = document.createElement("div");
-    const col =
-        {
-            ok: "border-green-700 text-green-300",
-            err: "border-red-700 text-red-300",
-            info: "border-blue-700 text-blue-300",
-        }[type] || "";
+    const col = { ok: "border-green-700 text-green-300", err: "border-red-700 text-red-300", info: "border-blue-700 text-blue-300" }[type] || "";
     el.className = `mono text-xs bg-gray-900 border-l-2 border border-gray-800 ${col} rounded-lg px-4 py-2.5 shadow-xl toastin min-w-56`;
     el.textContent = msg;
     c.appendChild(el);
     setTimeout(() => el.remove(), 3500);
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-    startProg();
-
-    ["modal-add", "modal-edit"].forEach((id) => {
-        const modal = document.getElementById(id);
-        if (modal) {
-            modal.addEventListener("click", (e) => {
-                if (e.target.id === id) e.target.classList.add("hidden");
-            });
-        }
-    });
-});
-
 const AUTH_CONFIG = {
-    bearer: {
-        label: "Bearer Token",
-        placeholder: "eyJhbGciOiJIUzI1NiIs...",
-        hint: 'Token saja, tanpa kata "Bearer"',
-    },
-    basic: {
-        label: "Basic Auth",
-        placeholder: "username:password",
-        hint: "Format: username:password (pisah dengan titik dua)",
-    },
+    bearer: { label: "Bearer Token", placeholder: "eyJhbGciOiJIUzI1NiIs...", hint: 'Token saja, tanpa kata "Bearer"' },
+    basic: { label: "Basic Auth", placeholder: "username:password", hint: "Format: username:password (pisah dengan titik dua)" },
 };
 
 window.toggleAuthValue = function (prefix) {
@@ -430,52 +326,91 @@ window.toggleAuthValue = function (prefix) {
         hint.textContent = AUTH_CONFIG[type].hint;
     }
 };
+
 window.toggleMuteService = function (id) {
     const sid = String(id);
     const input = document.getElementById(`input-time-${id}`);
     const unit = document.getElementById(`unit-time-${id}`);
+    const now = Date.now();
 
-    if (window.mutedServices[sid]) {
+    const isCurrentlyMuted = window.mutedServices[sid] && window.mutedServices[sid] > now;
+
+    if (isCurrentlyMuted) {
         delete window.mutedServices[sid];
-        updateMuteUI(id, false);
-        toast(`Service ${id} kembali dipantau`, "ok");
+        window.saveMuteToStorage();
+        window.updateMuteUI(id, false);
+        toast(`Service #${id} kembali dipantau`, "ok");
+
+        if (window.anyStillAlarming && window.anyStillAlarming()) {
+            if (window.startAlarm) window.startAlarm();
+        }
     } else {
-        const val = parseFloat(input.value) || 1;
+        const val = parseFloat(input?.value) || 1;
         const multiplier = { m: 60000, h: 3600000, d: 86400000 };
-        const duration = val * (multiplier[unit.value] || 60000);
+        const unitVal = unit?.value || 'm';
+        const duration = val * (multiplier[unitVal] || 60000);
 
-        window.mutedServices[sid] = Date.now() + duration;
-        updateMuteUI(id, true);
-        toast(`Mute ${id} selama ${val}${unit.value}`, "info");
+        window.mutedServices[sid] = now + duration;
+        window.saveMuteToStorage();
+        window.updateMuteUI(id, true);
+
+        const unitLabel = { m: 'menit', h: 'jam', d: 'hari' }[unitVal] || 'menit';
+        toast(`Service #${id} di-mute selama ${val} ${unitLabel}`, "info");
+
+        if (window.anyStillAlarming && !window.anyStillAlarming()) {
+            if (window.stopAlarm) window.stopAlarm(true);
+        }
     }
-
-    saveMuteToStorage();
-    if (!anyStillAlarming()) stopAlarm(true);
 };
 
-function updateMuteUI(id, isMuted) {
-    const btn = document.getElementById(`mute-svc-${id}`);
-    const icon = document.getElementById(`mute-icon-${id}`);
-    const label = document.getElementById(`timer-label-${id}`);
-    const card = document.getElementById(`card-${id}`);
+window.updateMuteUI = function (id, isMuted) {
+    const sid = String(id);
+    const btn = document.getElementById(`mute-svc-${sid}`);
+    const icon = document.getElementById(`mute-icon-${sid}`);
+    const label = document.getElementById(`timer-label-${sid}`);
+    const card = document.getElementById(`card-${sid}`);
 
     if (isMuted) {
-        btn.classList.add(
-            "bg-yellow-500/10",
-            "border-yellow-500/50",
-            "text-yellow-500",
-        );
-        icon.textContent = "⏳";
+        if (btn) {
+            btn.classList.add("bg-yellow-500/10", "border-yellow-500/50", "text-yellow-500");
+            btn.classList.remove("text-gray-500", "border-gray-700");
+        }
+        if (icon) icon.textContent = "⏳";
         if (label) label.classList.remove("hidden");
-        card.style.opacity = "0.7";
+        if (card) card.style.opacity = "0.6";
     } else {
-        btn.classList.remove(
-            "bg-yellow-500/10",
-            "border-yellow-500/50",
-            "text-yellow-500",
-        );
-        icon.textContent = "🔔";
-        if (label) label.classList.add("hidden");
-        card.style.opacity = "1";
+        if (btn) {
+            btn.classList.remove("bg-yellow-500/10", "border-yellow-500/50", "text-yellow-500");
+            btn.classList.add("text-gray-500", "border-gray-700");
+        }
+        if (icon) icon.textContent = "🔔";
+        if (label) {
+            label.classList.add("hidden");
+            label.textContent = "";
+        }
+        if (card) card.style.opacity = "1";
     }
-}
+};
+
+document.addEventListener("DOMContentLoaded", () => {
+    startProg();
+
+    ["modal-add", "modal-edit"].forEach((id) => {
+        const modal = document.getElementById(id);
+        if (modal) {
+            modal.addEventListener("click", (e) => {
+                if (e.target.id === id) e.target.classList.add("hidden");
+            });
+        }
+    });
+
+    const now = Date.now();
+    for (const sid in window.mutedServices) {
+        if (window.mutedServices[sid] > now) {
+            window.updateMuteUI(sid, true);
+        } else {
+            delete window.mutedServices[sid];
+        }
+    }
+    window.saveMuteToStorage();
+});

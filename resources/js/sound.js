@@ -1,5 +1,4 @@
 window.prevStatus = {};
-window.mutedServices = new Set();
 window.isUpdating = false;
 
 let alertCooldown = false;
@@ -9,6 +8,7 @@ let alertBuffer = null;
 let activeSource = null;
 let isLoadingSound = false;
 let alert_until = 0;
+
 async function loadSound() {
     if (alertBuffer || isLoadingSound) return;
     isLoadingSound = true;
@@ -42,16 +42,15 @@ function playLoop() {
 
 function startAlarm() {
     if (activeSource) return;
-
     if (Date.now() < alert_until) {
-        console.log("🤫 Ssshhh... Sistem masih dalam masa Global Snooze.");
+        console.log("🤫 Global Snooze aktif, alarm ditahan.");
         return;
     }
-
-    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    if (audioCtx.state === 'suspended') {
+    if (!audioCtx)
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === "suspended") {
         audioCtx.resume().then(() => {
-            if (audioCtx.state === 'running') playLoop();
+            if (audioCtx.state === "running") playLoop();
         });
     } else {
         playLoop();
@@ -70,7 +69,6 @@ function stopAlarm(isManual = false) {
         const expiry = Date.now() + COOLDOWN_MS;
         localStorage.setItem("alert_cooldown_expiry", expiry);
         alertCooldown = true;
-
         setTimeout(() => {
             alertCooldown = false;
             localStorage.removeItem("alert_cooldown_expiry");
@@ -81,114 +79,61 @@ function stopAlarm(isManual = false) {
     }
 }
 
-function checkExistingCooldown() {
-    const expiry = localStorage.getItem("alert_cooldown_expiry");
-    if (expiry) {
-        const remaining = parseInt(expiry) - Date.now();
-        if (remaining > 0) {
-            alertCooldown = true;
-            setTimeout(() => {
-                alertCooldown = false;
-            }, remaining);
-        }
-    }
-}
-
 function updatePulse(id, isAlarming) {
     const card = document.getElementById(`card-${id}`);
     if (!card) return;
     card.classList.toggle("alarm-pulse", isAlarming);
 }
 
-function anyStillAlarming() {
-    return [...document.querySelectorAll(".service-card")].some((c) => {
-        const cardId = c.id.replace("card-", "");
-        return (
-            c.dataset.status === "offline" && !window.mutedServices.has(cardId)
-        );
+window.anyStillAlarming = function () {
+    const now = Date.now();
+    return [...document.querySelectorAll(".service-card")].some((card) => {
+        const sid = String(card.dataset.id || card.id.replace("card-", ""));
+        const status = card.dataset.status;
+        const expiry = window.mutedServices[sid];
+        const isMuted = expiry && expiry > now;
+        return status === "offline" && !isMuted;
     });
-}
+};
 
-window.trackStatusChange = function(id, newStatus) {
+window.startAlarm = startAlarm;
+window.stopAlarm = stopAlarm;
+
+window.trackStatusChange = function (id, newStatus) {
     const sid = String(id);
     const prev = window.prevStatus[sid];
     window.prevStatus[sid] = newStatus;
 
     const card = document.getElementById(`card-${sid}`);
-    if (card) {
-        card.dataset.status = newStatus; 
-    }
+    if (card) card.dataset.status = newStatus;
 
-    if (newStatus === 'offline' && prev !== 'offline' && prev !== undefined) {
+    if (newStatus === "offline" && prev !== "offline" && prev !== undefined) {
         if (Date.now() > alert_until) {
-            if (!window.mutedServices.has(sid)) {
+            const expiry = window.mutedServices[sid];
+            const isMuted = expiry && expiry > Date.now();
+            if (!isMuted) {
+                console.log(`🚨 Alarm triggered: sid=${sid}`);
                 startAlarm();
                 updatePulse(id, true);
+            } else {
+                console.log(`🔇 sid=${sid} offline tapi di-mute, skip alarm`);
             }
         }
     }
-    if (newStatus === 'online' && prev === 'offline') {
-        window.mutedServices.delete(sid);
-        updateMuteBtn(id, false);
+
+    if (newStatus === "online" && prev === "offline") {
+        delete window.mutedServices[sid];
+        window.saveMuteToStorage();
+        window.updateMuteUI(id, false);
         updatePulse(id, false);
-        
-        if (!anyStillAlarming()) {
-            console.log("✅ Semua service sudah sehat. Mematikan alarm...");
-            stopAlarm(true); 
+
+        if (!window.anyStillAlarming()) {
+            console.log("✅ Semua service sehat. Alarm dimatikan.");
+            stopAlarm(true);
         }
     }
     return false;
-}
-
-window.toggleMuteService = function(id) {
-    const sid = String(id);
-    
-    if (window.mutedServices.has(sid)) {
-        window.mutedServices.delete(sid);
-        updateMuteBtn(id, false);
-        
-        alert_until = 0; 
-        localStorage.removeItem('alert_until_timestamp');
-        
-        if (anyStillAlarming()) {
-            startAlarm();
-            updatePulse(id, true);
-        }
-    } else {
-        window.mutedServices.add(sid);
-        updateMuteBtn(id, true);
-        updatePulse(id, false);
-        
-        alert_until = Date.now() + COOLDOWN_MS;
-        localStorage.setItem('alert_until_timestamp', alert_until);
-        
-        console.log("🔇 Alarm di-Snooze sampai: " + new Date(alert_until).toLocaleTimeString());
-        if (!anyStillAlarming() || alert_until > Date.now()) {
-            stopAlarm(true); 
-        }
-    }
-}
-
-function updateMuteBtn(id, isMuted) {
-    const btn = document.getElementById(`mute-svc-${id}`);
-    const icon = document.getElementById(`mute-icon-${id}`);
-    if (!btn || !icon) return;
-    if (isMuted) {
-        btn.classList.add("text-red-400", "border-red-800/50", "bg-red-900/20");
-        btn.classList.remove("text-gray-500", "border-gray-700");
-        icon.textContent = "🔇";
-        btn.title = "Muted — klik untuk unmute";
-    } else {
-        btn.classList.remove(
-            "text-red-400",
-            "border-red-800/50",
-            "bg-red-900/20",
-        );
-        btn.classList.add("text-gray-500", "border-gray-700");
-        icon.textContent = "🔔";
-        btn.title = "Klik untuk mute service ini";
-    }
-}
+};
 
 function showAudioBanner() {
     if (document.getElementById("audio-banner")) return;
@@ -201,19 +146,19 @@ function showAudioBanner() {
     banner.onclick = () => {
         if (audioCtx) audioCtx.resume();
         banner.remove();
-        if (anyStillAlarming()) startAlarm();
+        if (window.anyStillAlarming()) startAlarm();
     };
     document.body.appendChild(banner);
 }
 
-window.saveCooldown = function() {
-    const input = document.getElementById('cooldown-input');
-    const unit  = document.getElementById('cooldown-unit');
-    const val   = parseInt(input.value);
+window.saveCooldown = function () {
+    const input = document.getElementById("cooldown-input");
+    const unit = document.getElementById("cooldown-unit");
+    const val = parseInt(input.value);
 
     if (isNaN(val) || val < 1) {
-        input.classList.add('border-red-500');
-        setTimeout(() => input.classList.remove('border-red-500'), 1500);
+        input.classList.add("border-red-500");
+        setTimeout(() => input.classList.remove("border-red-500"), 1500);
         return;
     }
 
@@ -221,21 +166,24 @@ window.saveCooldown = function() {
     COOLDOWN_MS = val * multiplier[unit.value] * 1000;
 
     alert_until = Date.now() + COOLDOWN_MS;
-    localStorage.setItem('alert_until_timestamp', alert_until);
+    localStorage.setItem("alert_until_timestamp", String(alert_until));
+    localStorage.setItem("alert_cooldown_val", String(val));
+    localStorage.setItem("alert_cooldown_unit", unit.value);
 
-    stopAlarm(true); 
+    stopAlarm(true);
 
-    const label = document.getElementById('cooldown-label');
+    const label = document.getElementById("cooldown-label");
     if (label) {
-        label.classList.remove('text-gray-600');
-        label.classList.add('text-yellow-500', 'font-bold');
-        label.textContent = `Snooze Aktif...`;
+        label.classList.remove("text-gray-600");
+        label.classList.add("text-yellow-500", "font-bold");
+        label.textContent = "Snooze Aktif...";
     }
-}
+};
+
 function restoreCooldown() {
     const savedVal = localStorage.getItem("alert_cooldown_val");
     const savedUnit = localStorage.getItem("alert_cooldown_unit");
-    
+
     if (savedVal && savedUnit) {
         const multiplier = { s: 1, m: 60, h: 3600 };
         const labelText = { s: "detik", m: "menit", h: "jam" };
@@ -247,17 +195,32 @@ function restoreCooldown() {
 
         if (input) input.value = savedVal;
         if (unit) unit.value = savedUnit;
-        
+
         if (label) {
             if (alert_until > Date.now()) {
-                label.textContent = "Snooze Aktif..."; 
-                label.classList.add('text-yellow-500');
+                label.classList.add("text-yellow-500", "font-bold");
+                label.textContent = "Snooze Aktif...";
             } else {
                 label.textContent = `Saat ini: ${savedVal} ${labelText[savedUnit]}`;
             }
         }
     }
 }
+
+window.cancelCooldown = function () {
+    alert_until = 0;
+    localStorage.removeItem("alert_until_timestamp");
+    const label = document.getElementById("cooldown-label");
+    if (label) {
+        label.textContent = "Monitoring Aktif";
+        label.classList.remove("text-yellow-500", "font-bold");
+        label.classList.add("text-gray-600");
+    }
+    if (window.anyStillAlarming()) {
+        console.log("📢 Masih ada service offline, alarm dinyalakan kembali.");
+        startAlarm();
+    }
+};
 
 window.initPrevStatus = function () {
     document.querySelectorAll(".service-card").forEach((card) => {
@@ -266,10 +229,8 @@ window.initPrevStatus = function () {
         if (id && status) window.prevStatus[String(id)] = status;
     });
 
-    const savedUntil = localStorage.getItem('alert_until_timestamp');
-    if (savedUntil) {
-        alert_until = parseInt(savedUntil);
-    }
+    const savedUntil = localStorage.getItem("alert_until_timestamp");
+    if (savedUntil) alert_until = parseInt(savedUntil);
 
     restoreCooldown();
 
@@ -277,59 +238,79 @@ window.initPrevStatus = function () {
         if (audioCtx && audioCtx.state === "suspended") {
             showAudioBanner();
         }
-
-        if (anyStillAlarming() && Date.now() > alert_until) {
+        if (window.anyStillAlarming() && Date.now() > alert_until) {
             startAlarm();
-            
             document.querySelectorAll(".service-card").forEach((card) => {
-                const sid = card.id.replace("card-", "");
-                if (
-                    card.dataset.status === "offline" &&
-                    !window.mutedServices.has(sid)
-                ) {
+                const sid = String(card.dataset.id || card.id.replace("card-", ""));
+                const expiry = window.mutedServices[sid];
+                const isMuted = expiry && expiry > Date.now();
+                if (card.dataset.status === "offline" && !isMuted) {
                     updatePulse(sid, true);
                 }
             });
-        } else if (anyStillAlarming() && Date.now() <= alert_until) {
-            console.log("🔕 Status offline terdeteksi, tapi alarm ditahan oleh Global Snooze.");
+        } else if (window.anyStillAlarming() && Date.now() <= alert_until) {
+            console.log("🔕 Offline terdeteksi, ditahan Global Snooze.");
         }
     });
 };
-window.cancelCooldown = function() {
-    alert_until = 0;
-    localStorage.removeItem('alert_until_timestamp');
-    const label = document.getElementById('cooldown-label');
-    if (label) {
-        label.textContent = "Monitoring Aktif";
-        label.classList.remove('text-yellow-500', 'font-bold');
+
+document.addEventListener("DOMContentLoaded", window.initPrevStatus);
+
+setInterval(() => {
+    const now = Date.now();
+    let anyExpired = false;
+
+    for (const sid in window.mutedServices) {
+        const expiry = window.mutedServices[sid];
+        const remaining = expiry - now;
+        const label = document.getElementById(`timer-label-${sid}`);
+
+        if (remaining > 0) {
+            if (label) {
+                label.classList.remove("hidden");
+                if (remaining >= 3600000) {
+                    label.textContent = Math.ceil(remaining / 3600000) + "h";
+                } else if (remaining >= 60000) {
+                    label.textContent = Math.ceil(remaining / 60000) + "m";
+                } else {
+                    label.textContent = Math.ceil(remaining / 1000) + "s";
+                }
+            }
+        } else {
+            console.log(`🔥 SNOOZE EXPIRED: ID ${sid} kembali dipantau`);
+            delete window.mutedServices[sid];
+            window.saveMuteToStorage();
+            window.updateMuteUI(sid, false);
+            updatePulse(sid, false);
+            anyExpired = true;
+        }
     }
-    if (anyStillAlarming()) {
-        console.log("📢 Masih ada service offline, alarm dinyalakan kembali.");
+
+    if (anyExpired && window.anyStillAlarming() && Date.now() > alert_until) {
         startAlarm();
     }
-}
-document.addEventListener("DOMContentLoaded", window.initPrevStatus);
-setInterval(() => {
-    const label = document.getElementById('cooldown-label');
-    if (!label || alert_until === 0) return;
 
-    const remaining = alert_until - Date.now();
-
-    if (remaining > 0) {
-        const h = Math.floor(remaining / 3600000);
-        const m = Math.floor((remaining % 3600000) / 60000);
-        const s = Math.floor((remaining % 60000) / 1000);
-
-        let timeStr = "";
-        if (h > 0) timeStr += `${h}j `;
-        if (m > 0 || h > 0) timeStr += `${m}m `;
-        timeStr += `${s}s`;
-
-        label.textContent = `Snooze: ${timeStr} lagi`;
-        label.classList.add('text-yellow-500');
-    } else {
-        console.log("⏰ Waktu Snooze habis, membangunkan alarm...");
-        
-        window.cancelCooldown(); 
+    const globalLabel = document.getElementById("cooldown-label");
+    if (globalLabel && alert_until > now) {
+        const rem = alert_until - now;
+        let timeStr;
+        if (rem >= 3600000) {
+            timeStr = Math.ceil(rem / 3600000) + " jam";
+        } else if (rem >= 60000) {
+            timeStr = Math.ceil(rem / 60000) + " menit";
+        } else {
+            timeStr = Math.ceil(rem / 1000) + " detik";
+        }
+        globalLabel.textContent = `⏳ Snooze: ${timeStr} lagi`;
+        globalLabel.classList.add("text-yellow-500", "font-bold");
+        globalLabel.classList.remove("text-gray-600");
+    } else if (globalLabel && alert_until > 0 && alert_until <= now) {
+        alert_until = 0;
+        localStorage.removeItem("alert_until_timestamp");
+        globalLabel.textContent = "Monitoring Aktif";
+        globalLabel.classList.remove("text-yellow-500", "font-bold");
+        globalLabel.classList.add("text-gray-600");
+        if (window.anyStillAlarming()) startAlarm();
     }
+
 }, 1000);
